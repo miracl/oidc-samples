@@ -1,0 +1,38 @@
+name: Go-sample
+
+on: [push]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+       
+      - name: Go lint
+        run: test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"          
+
+      - name: Go build
+        run: |
+          cd go-sample/cmd/demo/
+          go build -v .
+
+  docker:
+    needs: go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+     
+      - name: Docker login, build & push
+        env:
+          GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_AUTH_TOKEN }}
+          GITHUB_OWNER: ivivanov
+          GITHUB_REGISTRY: docker.pkg.github.com
+        run: |
+          docker login -u $GITHUB_OWNER -p $GITHUB_AUTH_TOKEN $GITHUB_REGISTRY
+          docker build --tag $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest go-sample/
+          docker push $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest
