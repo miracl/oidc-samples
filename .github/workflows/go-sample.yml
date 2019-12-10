@@ -1,6 +1,9 @@
 name: Go-sample
 
-on: [push]
+on:
+  push:
+    paths:
+    - 'go-sample/**' 
 
 env:
   AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
