@@ -3,9 +3,9 @@ name: Go-sample
 on: [push]
 
 env:
-  GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_AUTH_TOKEN }}
-  GITHUB_OWNER: ivivanov
-  GITHUB_REGISTRY: docker.pkg.github.com
+  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
+  OWNER: ivivanov
+  DOCKER_REGISTRY: docker.pkg.github.com
 
 jobs:
   go:
@@ -34,9 +34,9 @@ jobs:
      
       - name: Docker login, build & push
         run: |
-          docker login -u $GITHUB_OWNER -p $GITHUB_AUTH_TOKEN $GITHUB_REGISTRY
-          docker build --tag $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest go-sample/
-          docker push $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest
+          docker login -u $OWNER -p $AUTH_TOKEN $DOCKER_REGISTRY
+          docker build --tag $DOCKER_REGISTRY/$OWNER/oidc-samples/go-sample:latest go-sample/
+          docker push $DOCKER_REGISTRY/$OWNER/oidc-samples/go-sample:latest
 
   tests:
       needs: docker
@@ -44,9 +44,9 @@ jobs:
       steps:
         - name: Docker pull, run & test
           run: |
-            docker login -u $GITHUB_OWNER -p $GITHUB_AUTH_TOKEN $GITHUB_REGISTRY
-            docker pull $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest
-            CONTAINER_ID=$(docker run -d -p 8000:8000 --rm $GITHUB_REGISTRY/$GITHUB_OWNER/oidc-samples/go-sample:latest)
+            docker login -u $OWNER -p $AUTH_TOKEN $DOCKER_REGISTRY
+            docker pull $DOCKER_REGISTRY/$OWNER/oidc-samples/go-sample:latest
+            CONTAINER_ID=$(docker run -d -p 8000:8000 --rm $DOCKER_REGISTRY/$OWNER/oidc-samples/go-sample:latest)
             sleep 5
             curl localhost:8000/
             docker container stop $CONTAINER_ID
