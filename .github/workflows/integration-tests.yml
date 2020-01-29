@@ -11,8 +11,6 @@ env:
   USER: ${{ secrets.USER }}
   AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
   OWNER: miracl
-  CLIENT_ID: ${{ secrets.CLINET_ID }}
-  CLINENT_SECRET: ${{ secrets.CLINET_SECRET }}
 
 jobs:
   go:
