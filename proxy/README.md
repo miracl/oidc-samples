@@ -1,6 +1,10 @@
 # MIRACL Proxy
 
+<<<<<<< HEAD
 Proxy implementation that allows us to modify the traffic for testing purposes.
+=======
+We have a proxy implementation using the [goproxy](https://github.com/elazarl/goproxy) library. We need this in order to be able to tamper with requests and responses made between the samples and our platform. We also use it to test if the OIDC libraries which we use in all samples work through a proxy.
+>>>>>>> README Changes
 
 `HOST` - Host to listen on. The default is "0.0.0.0".
 
