@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,7 +15,12 @@ func TestAuth(t *testing.T) {
 	pin := randPIN()
 
 	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
-	authorizeRequestURL, err := request(options.sampleURL, "GET", nil)
+	client := newSampleClient(options.sampleURL, &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	})
+	authorizeRequestURL, err := client.authorize()
 	if err != nil {
 		t.Fatal("Error making initial request to the home page:", err)
 	}
@@ -31,19 +36,14 @@ func TestAuth(t *testing.T) {
 	}
 
 	// Contains an URL, from which we can fetch the user info.
-	sessionURL, err := request(accessResponse.RedirectURL, "GET", nil)
+	err = client.login(accessResponse.RedirectURL)
 	if err != nil {
 		t.Fatal("Error logging in:", err)
 	}
 
-	userInfoResponse, err := request(string(sessionURL), "GET", nil)
+	userInfo, err := client.getUserInfo()
 	if err != nil {
 		t.Fatal("Error getting user info:", err)
-	}
-
-	var userInfo userInfo
-	if err = json.Unmarshal(userInfoResponse, &userInfo); err != nil {
-		t.Fatal("Failed to unmarshal user info")
 	}
 
 	if userInfo.Email != userID {
