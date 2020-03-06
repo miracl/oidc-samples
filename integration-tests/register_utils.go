@@ -3,6 +3,7 @@ package main
 import (
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -33,7 +34,6 @@ func register(userID string, deviceName string, pin int, authorizeRequestURL str
 	if err != nil {
 		return identity{}, err
 	}
-
 	// Call to /signature endpoint.
 	sigResponse, err := signatureRequest(regResponse.MPinID, regResponse.RegOTT)
 	if err != nil {
@@ -153,6 +153,11 @@ func signatureRequest(mpinID string, regOTT string) (*signatureResponse, error) 
 	var sigResponse *signatureResponse
 	if err := json.Unmarshal(resp, &sigResponse); err != nil {
 		return nil, err
+	}
+
+	if !(sigResponse.CS2URL != "" && sigResponse.ClientSecretShare != "" &&
+		sigResponse.Curve != "" && sigResponse.DTAs != "") {
+		return nil, errors.New("Invalid signature response")
 	}
 
 	return sigResponse, nil
