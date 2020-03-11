@@ -6,10 +6,10 @@ import (
 )
 
 type sampleClient struct {
-	authCookies []*http.Cookie
-	url         string
-	httpClient  *http.Client
-	sessionURL  string
+	cookies    []*http.Cookie
+	url        string
+	httpClient *http.Client
+	sessionURL string
 }
 
 func newSampleClient(url string, httpClient *http.Client) *sampleClient {
@@ -20,13 +20,13 @@ func newSampleClient(url string, httpClient *http.Client) *sampleClient {
 }
 
 func (s *sampleClient) authorize() (responseBody []byte, err error) {
-	req, err := getRequest(s.url, "GET", nil)
+	req, err := newRequest(s.url, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var res []byte
-	res, s.authCookies, err = getResponse(req, s.httpClient)
+	res, s.cookies, err = getResponse(req, s.httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -35,16 +35,15 @@ func (s *sampleClient) authorize() (responseBody []byte, err error) {
 }
 
 func (s *sampleClient) login(redirectURL string) error {
-	req, err := getRequest(redirectURL, "GET", nil)
+	req, err := newRequest(redirectURL, "GET", nil)
 	if err != nil {
 		return err
 	}
-	for _, cookie := range s.authCookies {
-		req.AddCookie(cookie)
-	}
+
+	s.addCookies(req)
 
 	var sessionURL []byte
-	sessionURL, s.authCookies, err = getResponse(req, s.httpClient)
+	sessionURL, s.cookies, err = getResponse(req, s.httpClient)
 	if err != nil {
 		return err
 	}
@@ -54,14 +53,12 @@ func (s *sampleClient) login(redirectURL string) error {
 }
 
 func (s *sampleClient) getUserInfo() (userInfo *userInfo, err error) {
-	req, err := getRequest(s.sessionURL, "GET", nil)
+	req, err := newRequest(s.sessionURL, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
-	for _, cookie := range s.authCookies {
-		req.AddCookie(cookie)
-	}
 
+	s.addCookies(req)
 	userInfoResponse, _, err := getResponse(req, s.httpClient)
 	if err != nil {
 		return nil, err
@@ -72,4 +69,10 @@ func (s *sampleClient) getUserInfo() (userInfo *userInfo, err error) {
 	}
 
 	return userInfo, nil
+}
+
+func (s *sampleClient) addCookies(req *http.Request) {
+	for _, cookie := range s.cookies {
+		req.AddCookie(cookie)
+	}
 }

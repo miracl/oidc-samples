@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func getRequest(url string, method string, payload interface{}, headers ...header) (req *http.Request, err error) {
+func newRequest(url string, method string, payload interface{}, headers ...header) (req *http.Request, err error) {
 	if method == "GET" {
 		req, err = http.NewRequest(method, url, nil)
 	} else {
@@ -33,14 +33,6 @@ func getRequest(url string, method string, payload interface{}, headers ...heade
 }
 
 func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byte, cookies []*http.Cookie, err error) {
-	if httpClient == nil {
-		httpClient = &http.Client{
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}
-	}
-
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
@@ -64,13 +56,13 @@ func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byt
 	return responseBody, resp.Cookies(), nil
 }
 
-func request(url string, method string, payload interface{}, headers ...header) (responseBody []byte, err error) {
-	req, err := getRequest(url, method, payload, headers...)
+func makeRequest(httpClient *http.Client, url string, method string, payload interface{}, headers ...header) (responseBody []byte, err error) {
+	req, err := newRequest(url, method, payload, headers...)
 	if err != nil {
 		return nil, err
 	}
 
-	res, _, err := getResponse(req, nil)
+	res, _, err := getResponse(req, httpClient)
 	return res, err
 }
 

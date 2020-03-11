@@ -15,22 +15,24 @@ func TestAuth(t *testing.T) {
 	pin := randPIN()
 
 	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
-	client := newSampleClient(options.sampleURL, &http.Client{
+	httpClient := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-	})
+	}
+	client := newSampleClient(options.sampleURL, httpClient)
+
 	authorizeRequestURL, err := client.authorize()
 	if err != nil {
 		t.Fatal("Error making initial request to the home page:", err)
 	}
 
-	identity, err := register(userID, deviceName, pin, string(authorizeRequestURL))
+	identity, err := register(httpClient, userID, deviceName, pin, string(authorizeRequestURL))
 	if err != nil {
 		t.Fatal("Error registering:", err)
 	}
 
-	accessResponse, err := authenticate(identity, userID, pin, string(authorizeRequestURL))
+	accessResponse, err := authenticate(httpClient, identity, userID, pin, string(authorizeRequestURL))
 	if err != nil {
 		t.Fatal("Error authenticating:", err)
 	}
