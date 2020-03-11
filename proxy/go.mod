@@ -6,4 +6,5 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484
 	github.com/fatih/color v1.9.0
 	github.com/inconshreveable/go-vhost v0.0.0-20160627193104-06d84117953b
+	github.com/rogpeppe/godef v1.1.2-0.20200303182854-8318a6814d22 // indirect
 )
