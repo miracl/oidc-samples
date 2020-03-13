@@ -8,7 +8,10 @@ import (
 
 func main() {
 	setCA(caCert, caKey)
-	proxy := setupProxy()
+
+	proxy := &proxy{}
+
+	proxyHttpServer := proxy.setupProxy()
 
 	var host, port string
 	flag.StringVar(&host, "host", "0.0.0.0", "Listen host")
@@ -16,9 +19,8 @@ func main() {
 	verbose := flag.Bool("v", false, "Log every proxied request to stdout")
 	flag.Parse()
 
-	proxy.Verbose = *verbose
+	proxyHttpServer.Verbose = *verbose
 	address := host + ":" + port
 
-	log.Fatal(http.ListenAndServe(address, proxy))
-
+	log.Fatal(http.ListenAndServe(address, proxyHttpServer))
 }

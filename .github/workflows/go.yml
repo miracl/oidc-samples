@@ -56,14 +56,14 @@ jobs:
 
           docker pull $SAMPLE_IMAGE:latest
 
-          docker run 
+          docker run
           --detach 
           --publish 8000:8000 
           --env CLIENT_ID 
           --env CLIENT_SECRET 
           $SAMPLE_IMAGE:latest
 
-          docker run 
+          docker run
           --network="host" 
           --env CLIENT_ID 
           --env CLIENT_SECRET 
@@ -81,12 +81,12 @@ jobs:
         run: >
             docker login -u $USER -p $AUTH_TOKEN $DOCKER_REGISTRY
 
-            docker run 
+            docker run
             --detach 
             --publish 8080:8080 
             $PROXY_IMAGE_LATEST
 
-            docker run 
+            docker run
             --detach 
             --env CLIENT_ID 
             --env CLIENT_SECRET 
@@ -95,7 +95,7 @@ jobs:
             --network host 
             $SAMPLE_IMAGE:latest
 
-            docker run 
+            docker run
             --network="host" 
             --env CLIENT_ID 
             --env CLIENT_SECRET 
