@@ -34,28 +34,46 @@ func (p *proxy) setupProxy() *goproxy.ProxyHttpServer {
 func (p *proxy) sessionHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/session" {
+			http.Error(w, "Error: Only requests to /session allowed", http.StatusNotFound)
 			return
 		}
-		if req.Method == "POST" && p.session == nil {
-			p.startSession(req)
+		if req.Method != http.MethodPost && req.Method != http.MethodDelete {
+			http.Error(w, "Error: Only POST and DELETE allowed", http.StatusMethodNotAllowed)
+			return
 		}
-		if req.Method == "DELETE" {
+		if req.Method == http.MethodPost && p.session != nil {
+			http.Error(w, "Error: There is already a started session", http.StatusBadRequest)
+			return
+		}
+		if req.Method == http.MethodDelete && p.session == nil {
+			http.Error(w, "Error: There is no started session", http.StatusBadRequest)
+			return
+		}
+
+		if req.Method == http.MethodPost {
+			p.startSession(w, req)
+		}
+		if req.Method == http.MethodDelete {
 			p.sessionMux.Lock()
 			p.session = nil
 			p.sessionMux.Unlock()
 		}
+
+		w.WriteHeader(http.StatusOK)
 	})
 }
 
-func (p *proxy) startSession(req *http.Request) error {
+func (p *proxy) startSession(w http.ResponseWriter, req *http.Request) error {
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
 	}
 	defer req.Body.Close()
 
 	var sessionResp session
 	if err = json.Unmarshal(reqBody, &sessionResp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
 	}
 
@@ -64,6 +82,8 @@ func (p *proxy) startSession(req *http.Request) error {
 		ModifyURL: sessionResp.ModifyURL,
 	}
 	p.sessionMux.Unlock()
+
+	w.WriteHeader(http.StatusOK)
 
 	return nil
 }
@@ -86,7 +106,7 @@ func (p *proxy) modifyResponse(proxiedResp *http.Response, ctx *goproxy.ProxyCtx
 	modifiedResp, err := client.Do(modifyReq)
 
 	if err != nil {
-		log.Fatal("Error POSTing to mediator", err)
+		log.Fatal("Error sending request to modifier", err)
 	}
 
 	proxiedResp.Body = ioutil.NopCloser(modifiedResp.Body)
