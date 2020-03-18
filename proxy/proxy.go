@@ -16,7 +16,7 @@ type proxy struct {
 }
 
 type session struct {
-	MediatorURL string `json:"mediatorUrl"`
+	ModifyURL string `json:"modifyUrl"`
 }
 
 func (p *proxy) setupProxy() *goproxy.ProxyHttpServer {
@@ -61,24 +61,36 @@ func (p *proxy) startSession(req *http.Request) error {
 
 	p.sessionMux.Lock()
 	p.session = &session{
-		MediatorURL: sessionResp.MediatorURL,
+		ModifyURL: sessionResp.ModifyURL,
 	}
 	p.sessionMux.Unlock()
 
 	return nil
 }
 
-func (p *proxy) modifyResponse(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-	if p.session != nil {
-		p.sessionMux.RLock()
-		modifiedResponse, err := http.Post(p.session.MediatorURL, "application/json", resp.Body)
-		p.sessionMux.RUnlock()
-		if err != nil {
-			log.Fatal("Error POSTing to mediator", err)
-		}
-
-		resp.Body = ioutil.NopCloser(modifiedResponse.Body)
+func (p *proxy) modifyResponse(proxiedResp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+	if p.session == nil {
+		return proxiedResp
 	}
 
-	return resp
+	client := &http.Client{}
+
+	p.sessionMux.RLock()
+	modifyReq, _ := http.NewRequest(proxiedResp.Request.Method, p.session.ModifyURL, nil)
+	p.sessionMux.RUnlock()
+
+	// copy body and headers from the response that the proxy intercepted
+	// to the place where they can be modified and returned back as response
+	modifyReq.Header = proxiedResp.Header
+	modifyReq.Body = proxiedResp.Body
+	modifiedResp, err := client.Do(modifyReq)
+
+	if err != nil {
+		log.Fatal("Error POSTing to mediator", err)
+	}
+
+	proxiedResp.Body = ioutil.NopCloser(modifiedResp.Body)
+	proxiedResp.Header = modifiedResp.Header
+
+	return proxiedResp
 }
