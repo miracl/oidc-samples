@@ -4,7 +4,7 @@ FROM docker.pkg.github.com/miracl/oidc-samples/proxy:latest as proxy
 FROM golang:alpine as builder
 COPY . /src
 RUN cd /src \
-    && go build -o /bin/sample .
+    && go build -mod=vendor -o /bin/sample .
 
 
 FROM alpine
