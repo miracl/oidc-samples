@@ -1,0 +1,101 @@
+name: dotnet
+
+on:
+  push:
+    paths:
+      - "samples/dotnet/**"
+      - ".github/workflows/dotnet.yml"
+  schedule:
+    - cron: '0 7 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/samples/dotnet
+  DOCKER_BUILD_CONTEXT: samples/dotnet
+  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/dotnet:${{ github.sha }}
+  PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
+  TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest-windows
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  CID_FILE: sample.cid
+
+jobs:
+  build-dotnet:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1.0.5
+      - name: Setup VSTest
+        uses: darenm/Setup-VSTest@v1
+      - name: Restore Packages
+        run: nuget restore samples/dotnet/OidcSample.sln
+      - name: Build Solution
+        run: |
+          msbuild.exe samples/dotnet/OidcSample.sln /p:platform="Any CPU" /p:configuration="Release"
+
+  build-docker:
+    needs: build-dotnet
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - name: Docker login, build & push
+        run: |
+          docker build --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest samples/dotnet/
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ steps.meta.outputs.tags}}
+          docker push ${{ steps.meta.outputs.tags}}
+
+  run-integration-tests:
+    needs: build-docker
+    runs-on: windows-latest
+    steps:
+      - name: Pull images
+        run: |
+          docker pull --quiet ${{ env.SAMPLE_IMAGE }}
+          docker pull --quiet ${{ env.TESTS_IMAGE }}
+      - name: Start the sample
+        shell: bash
+        run: docker run
+          --detach
+          --publish 8000:8000
+          --env CLIENT_ID
+          --env CLIENT_SECRET
+          --env REDIRECT_URL=http://sample:8000/login
+          --cidfile $CID_FILE
+          ${{ env.SAMPLE_IMAGE }}
+      - name: Sleep for 1 seconds
+        run: sleep 1s
+        shell: bash
+      - name: Info
+        id: info
+        shell: bash
+        run: |
+          export CID=$(cat $CID_FILE)
+          export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
+          echo "::set-output name=address::$ADDR"
+      - name: Run integration tests
+        id: tests
+        shell: powershell
+        run: docker run
+          --env CLIENT_ID
+          --env CLIENT_SECRET
+          --env SAMPLE_IP=${{ steps.info.outputs.address }}
+          --env SAMPLE_URL=http://sample:8000
+          --env REDIRECT_URL=http://sample:8000/login
+          ${{ env.TESTS_IMAGE }}
+
