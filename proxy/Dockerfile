@@ -1,8 +1,5 @@
 FROM golang:latest
-
-COPY . /src
-RUN cd /src \
-    && go build -o /bin/proxy . \
-    && cp entrypoint.sh /bin/
-
-ENTRYPOINT entrypoint.sh
+WORKDIR /src
+COPY . .
+RUN go build -o /usr/local/bin/proxy .
+ENTRYPOINT ["proxy"]
