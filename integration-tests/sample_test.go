@@ -24,28 +24,28 @@ func TestAuth(t *testing.T) {
 
 	authorizeRequestURL, err := client.authorize()
 	if err != nil {
-		t.Fatal("Error making initial request to the home page:", err)
+		t.Fatalf("Error making initial request to the home page: %v", err)
 	}
 
 	identity, err := register(httpClient, userID, deviceName, pin, string(authorizeRequestURL))
 	if err != nil {
-		t.Fatal("Error registering:", err)
+		t.Fatalf("Error registering: %v", err)
 	}
 
 	accessResponse, err := authenticate(httpClient, identity, userID, pin, string(authorizeRequestURL))
 	if err != nil {
-		t.Fatal("Error authenticating:", err)
+		t.Fatalf("Error authenticating: %v", err)
 	}
 
 	// Contains an URL, from which we can fetch the user info.
 	err = client.login(accessResponse.RedirectURL)
 	if err != nil {
-		t.Fatal("Error logging in:", err)
+		t.Fatalf("Error logging in: %v", err)
 	}
 
 	userInfo, err := client.getUserInfo()
 	if err != nil {
-		t.Fatal("Error getting user info:", err)
+		t.Fatalf("Error getting user info: %v", err)
 	}
 
 	if userInfo.Email != userID {
