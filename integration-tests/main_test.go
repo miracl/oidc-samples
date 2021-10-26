@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&options.clientID, "client-id", "", "the client id for the portal app")
 	flag.StringVar(&options.redirectURL, "redirect-url", "http://localhost:8000/login", "the redirect url from the portal app")
 	flag.StringVar(&options.apiURL, "api-url", "https://api.mpin.io", "the mpin api URL")
-	flag.StringVar(&options.sampleURL, "sample-url", "http://localhost:8000", "the sample URL")
+	flag.StringVar(&options.sampleURL, "sample-url", "http://127.0.0.1:8000", "the sample URL")
 
 	flag.Parse()
 
