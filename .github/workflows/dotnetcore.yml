@@ -7,51 +7,74 @@ on:
       - ".github/workflows/dotnetcore.yml"
 
 env:
-  DOCKER_REGISTRY: docker.pkg.github.com
-  USER: ${{ secrets.USER }}
-  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-  OWNER: miracl
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/dotnetcore
+  DOCKER_BUILD_CONTEXT: samples/dotnetcore
+  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/dotnetcore:${{ github.sha }}
+  PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
+  TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
 
 jobs:
   lint-dotnetcore:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-
-      - name: Set up DotNetCore 3.1
-        uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: "3.1.100" # SDK Version to use.
-
-      - name: DotNetCore lint
+          dotnet-version: "3.1.100"
+      - name: .NET Core lint
         run: dotnet build samples/dotnetcore/OidcSample.csproj
 
   build-docker:
     needs: lint-dotnetcore
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-
-      - name: Docker login, build & push
-        run: |
-          docker login -u $USER -p $AUTH_TOKEN $DOCKER_REGISTRY
-          docker build --tag $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:latest samples/dotnetcore/
-          docker push $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:latest
-          docker tag $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:latest $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:$GITHUB_ACTION
-          docker push $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:$GITHUB_ACTION
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: ${{ env.DOCKER_BUILD_CONTEXT }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   run-integration-tests:
     needs: build-docker
     runs-on: ubuntu-latest
     steps:
-      - name: Run integration tests
-        env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-
+      - name: Pull images
         run: |
-          docker login -u $USER -p $AUTH_TOKEN $DOCKER_REGISTRY
-          docker pull $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:latest
-          SAMPLE_CONTAINER_ID=$(docker run -d -p 8000:8000 --rm -e CLIENT_ID -e CLIENT_SECRET $DOCKER_REGISTRY/$OWNER/oidc-samples/dotnetcore:latest)
-          docker run --network="host" --rm -e CLIENT_ID -e CLIENT_SECRET $DOCKER_REGISTRY/$OWNER/oidc-samples/integration-tests:latest
-          docker container stop $SAMPLE_CONTAINER_ID
+          docker pull --quiet $SAMPLE_IMAGE
+          docker pull --quiet $TESTS_IMAGE
+      - name: Start the sample
+        run: docker run
+          --detach
+          --network host
+          --publish 8000
+          --env CLIENT_ID
+          --env CLIENT_SECRET
+          $SAMPLE_IMAGE
+      - name: Sleep for a seconds
+        run: sleep 1s
+        shell: bash
+      - name: Run integration tests
+        run: docker run
+          --network host
+          $TESTS_IMAGE
+            --client-id $CLIENT_ID
+            --client-secret $CLIENT_SECRET
