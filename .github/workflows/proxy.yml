@@ -7,22 +7,18 @@ on:
       - ".github/workflows/proxy.yml"
 
 env:
-  DOCKER_REGISTRY: docker.pkg.github.com
-  USER: ${{ secrets.USER }}
-  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-  PROXY_IMAGE: docker.pkg.github.com/miracl/oidc-samples/proxy
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/proxy
+  DOCKER_BUILD_CONTEXT: proxy
 
 jobs:
   lint-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-
-      - name: Set up Go 1.13
-        uses: actions/setup-go@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
         with:
-          go-version: 1.13
-
+          go-version: 1.*
       - name: Go lint
         run: test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
 
@@ -30,12 +26,24 @@ jobs:
     needs: lint-go
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-
-      - name: Docker login, build & push
-        run: |
-          docker login -u $USER -p $AUTH_TOKEN $DOCKER_REGISTRY
-          docker build --tag $PROXY_IMAGE:latest proxy/
-          docker push $PROXY_IMAGE:latest
-          docker tag $PROXY_IMAGE:latest $PROXY_IMAGE:$GITHUB_SHA
-          docker push $PROXY_IMAGE:$GITHUB_SHA
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: ${{ env.DOCKER_BUILD_CONTEXT }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
