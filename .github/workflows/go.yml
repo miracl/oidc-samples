@@ -5,6 +5,8 @@ on:
     paths:
       - "samples/go/**"
       - ".github/workflows/go.yml"
+  schedule:
+    - cron: '0 7 * * *'
 
 env:
   REGISTRY: ghcr.io
