@@ -3,6 +3,7 @@
 ![go](https://github.com/miracl/oidc-samples/workflows/go/badge.svg)
 ![nodejs](https://github.com/miracl/oidc-samples/workflows/nodejs/badge.svg)
 ![dotnetcore](https://github.com/miracl/oidc-samples/workflows/dotnetcore/badge.svg)
+![dotnet5](https://github.com/miracl/oidc-samples/workflows/dotnet5/badge.svg)
 
 These samples provide example integrations between the [MIRACL
 Trust](https://miracl.com) platform and various OIDC libraries. The integration

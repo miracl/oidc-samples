@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Pages\**" />
+    <Compile Remove="WebApplication1\**" />
+    <Compile Remove="WebApplication2\**" />
+    <Content Remove="Pages\**" />
+    <Content Remove="WebApplication1\**" />
+    <Content Remove="WebApplication2\**" />
+    <EmbeddedResource Remove="Pages\**" />
+    <EmbeddedResource Remove="WebApplication1\**" />
+    <EmbeddedResource Remove="WebApplication2\**" />
+    <None Remove="Pages\**" />
+    <None Remove="WebApplication1\**" />
+    <None Remove="WebApplication2\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IdentityModel" Version="5.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.11" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.11.1" />
+  </ItemGroup>
+
+</Project>

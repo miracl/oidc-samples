@@ -1,0 +1,82 @@
+name: dotnet5
+
+on:
+  push:
+    paths:
+      - "samples/dotnet5/**"
+      - ".github/workflows/dotnet5.yml"
+  schedule:
+    - cron: '0 7 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/dotnet5
+  DOCKER_BUILD_CONTEXT: samples/dotnet5
+  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/dotnet5:${{ github.sha }}
+  PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
+  TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest
+  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+
+jobs:
+  lint-dotnet5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "5.0"
+      - name: .NET Core lint
+        run: dotnet build samples/dotnet5/OidcSample.csproj
+
+  build-docker:
+    needs: lint-dotnet5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: ${{ env.DOCKER_BUILD_CONTEXT }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  run-integration-tests:
+    needs: build-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull images
+        run: |
+          docker pull --quiet $SAMPLE_IMAGE
+          docker pull --quiet $TESTS_IMAGE
+      - name: Start the sample
+        run: docker run
+          --detach
+          --network host
+          --publish 8000
+          --env CLIENT_ID
+          --env CLIENT_SECRET
+          $SAMPLE_IMAGE
+      - name: Sleep for a seconds
+        run: sleep 1s
+        shell: bash
+      - name: Run integration tests
+        run: docker run
+          --network host
+          $TESTS_IMAGE
+            --client-id $CLIENT_ID
+            --client-secret $CLIENT_SECRET
