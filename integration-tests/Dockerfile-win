@@ -1,0 +1,5 @@
+FROM ghcr.io/miracl/oidc-samples/test-runner:latest-windows
+WORKDIR /src
+COPY . .
+USER ContainerAdministrator
+ENTRYPOINT powershell -command c:\src\entrypoint-win.ps1
