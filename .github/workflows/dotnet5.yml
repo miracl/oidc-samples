@@ -10,9 +10,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: miracl/oidc-samples/dotnet5
+  IMAGE_NAME: miracl/oidc-samples/samples/dotnet5
   DOCKER_BUILD_CONTEXT: samples/dotnet5
-  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/dotnet5:${{ github.sha }}
+  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/dotnet5:${{ github.sha }}
   PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
   TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
