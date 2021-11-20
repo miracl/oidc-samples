@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/google/uuid"
@@ -25,6 +26,11 @@ func TestAuth(t *testing.T) {
 	authorizeRequestURL, err := client.authorize()
 	if err != nil {
 		t.Fatalf("Error making initial request to the home page: %v", err)
+	}
+
+	_, err = url.ParseRequestURI(string(authorizeRequestURL))
+	if err != nil {
+		t.Fatalf("Home page didn't respond with authorize url, error: %v, actual response: %v", err.Error(), string(authorizeRequestURL))
 	}
 
 	identity, err := register(httpClient, userID, deviceName, pin, string(authorizeRequestURL))
