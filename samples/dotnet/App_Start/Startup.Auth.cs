@@ -19,8 +19,10 @@ namespace dotnet
         public static string OidcRedirectUrl = Environment.GetEnvironmentVariable("REDIRECT_URL") ?? ConfigurationManager.AppSettings["REDIRECT_URL"];
         public static string OidcClientId = Environment.GetEnvironmentVariable("CLIENT_ID") ?? ConfigurationManager.AppSettings["CLIENT_iD"];
         public static string OidcClientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET") ?? ConfigurationManager.AppSettings["CLIENT_SECRET"];
+        public static string ProxyHost = Environment.GetEnvironmentVariable("PROXY_HOST") ?? ConfigurationManager.AppSettings["PROXY_HOST"];
+        public static string ProxyPort = Environment.GetEnvironmentVariable("PROXY_PORT") ?? ConfigurationManager.AppSettings["PROXY_PORT"];
         public const string NameIdentifier = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
-        
+
         public void ConfigureAuth(IAppBuilder app)
         {
             app.SetDefaultSignInAsAuthenticationType(CookieAuthenticationDefaults.AuthenticationType);
