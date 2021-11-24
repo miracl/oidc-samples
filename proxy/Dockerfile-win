@@ -1,0 +1,7 @@
+FROM golang:1.17.3-nanoserver-1809
+WORKDIR /src
+COPY . .
+
+USER ContainerAdministrator
+RUN go build -o C:\proxy .
+ENTRYPOINT ["c:\\proxy"]
