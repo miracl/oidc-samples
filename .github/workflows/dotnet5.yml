@@ -80,3 +80,38 @@ jobs:
           $TESTS_IMAGE
             --client-id $CLIENT_ID
             --client-secret $CLIENT_SECRET
+
+  run-integration-tests-with-proxy:
+    needs: build-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull images
+        run: |
+          docker pull --quiet $PROXY_IMAGE
+          docker pull --quiet $SAMPLE_IMAGE
+          docker pull --quiet $TESTS_IMAGE
+      - name: Start the proxy
+        run: docker run
+          --detach
+          --network host
+          --publish 8080
+          $PROXY_IMAGE
+      - name: Start the sample
+        run: docker run
+          --detach
+          --network host
+          --publish 8080
+          --env CLIENT_ID
+          --env CLIENT_SECRET
+          --env PROXY_HOST=127.0.0.1
+          --env PROXY_PORT=8080
+          $SAMPLE_IMAGE
+      - name: Sleep for a seconds
+        run: sleep 1s
+        shell: bash
+      - name: Run integration tests
+        run: docker run
+          --network host
+          $TESTS_IMAGE
+            --client-id $CLIENT_ID
+            --client-secret $CLIENT_SECRET
