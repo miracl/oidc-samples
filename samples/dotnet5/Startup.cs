@@ -1,22 +1,17 @@
+using IdentityModel.Client;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Http;
+using System.Net;
 using System.Net.Http;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication;
-using System.Text.Encodings.Web;
-using IdentityModel.Client;
 using System.Text;
 
 namespace OidcSample
@@ -35,7 +30,28 @@ namespace OidcSample
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            HttpClientHandler clientHandler = null;
+            if (!string.IsNullOrEmpty(this.Configuration["PROXY_HOST"]))
+            {
+                int port;
+                if (!int.TryParse(this.Configuration["PROXY_PORT"] ?? "8080", out port))
+                {
+                    throw new ArgumentException($"HOST_PORT should be a valid port number in the integer range. The current value {this.Configuration["PROXY_PORT"]} cannot be parsed.");
+                }
+                var proxy = new WebProxy(this.Configuration["PROXY_HOST"], port);
+                proxy.UseDefaultCredentials = true;
+                proxy.BypassProxyOnLocal = true;
+
+                clientHandler = new HttpClientHandler
+                {
+                    Proxy = proxy,
+                    UseProxy = true,
+                    ServerCertificateCustomValidationCallback = (o, c, ch, er) => true
+                };
+            }
+
             services.AddRazorPages();
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = OpenIdConnectDefaults.AuthenticationScheme;
@@ -45,6 +61,11 @@ namespace OidcSample
             .AddCookie()
             .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, "MIRACL", options =>
             {
+                if (clientHandler != null)
+                {
+                    options.BackchannelHttpHandler = clientHandler;
+                }
+
                 options.NonceCookie.SameSite = SameSiteMode.Lax;
                 options.CorrelationCookie.SameSite = SameSiteMode.Lax;
 
@@ -68,10 +89,10 @@ namespace OidcSample
                 {
                     OnAuthorizationCodeReceived = async c =>
                     {
-                        HttpClient client = new HttpClient();
+                        var client = clientHandler != null ? new HttpClient(clientHandler) : new HttpClient();
                         var response = await client.RequestAuthorizationCodeTokenAsync(new AuthorizationCodeTokenRequest
                         {
-                            Address = "https://api.mpin.io/oidc/token",
+                            Address = MiraclIssuer + "/oidc/token",
 
                             ClientId = c.TokenEndpointRequest.ClientId,
                             ClientSecret = c.TokenEndpointRequest.ClientSecret,
@@ -96,9 +117,10 @@ namespace OidcSample
         {
             app.UseDeveloperExceptionPage();
 
-            app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.Map("/logout", HandleLogout);
 
             app.Run(async context =>
             {
@@ -108,9 +130,6 @@ namespace OidcSample
                 var userResult = await context.AuthenticateAsync();
                 var user = userResult.Principal;
                 var props = userResult.Properties;
-
-                // This is what [Authorize(ActiveAuthenticationSchemes = OpenIdConnectDefaults.AuthenticationScheme)] calls
-                // var user = await context.AuthenticateAsync(OpenIdConnectDefaults.AuthenticationScheme);
 
                 // Not authenticated
                 if (user == null || !user.Identities.Any(identity => identity.IsAuthenticated))
@@ -136,8 +155,18 @@ namespace OidcSample
             });
         }
 
-        private static string HtmlEncode(string content) =>
-            string.IsNullOrEmpty(content) ? string.Empty : HtmlEncoder.Default.Encode(content);
+        private void HandleLogout(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                if (context.User != null && context.User.Identity != null && context.User.Identity.IsAuthenticated)
+                {
+                    await context.SignOutAsync();
+                }
+
+                await context.Response.WriteAsync("You've been just logout!");
+            });
+        }
 
         private string GetCallbackPath()
         {
