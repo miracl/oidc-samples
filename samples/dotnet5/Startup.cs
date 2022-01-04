@@ -84,6 +84,8 @@ namespace OidcSample
 
                 options.UsePkce = false;
                 options.SaveTokens = true;
+                options.ClaimActions.MapJsonKey("email", "email", "url");
+                options.ClaimActions.MapJsonKey("sub", "sub", "string");
 
                 options.Events = new OpenIdConnectEvents()
                 {
