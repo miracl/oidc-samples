@@ -80,7 +80,7 @@ namespace OidcSample
                 options.CallbackPath = this.GetCallbackPath();
 
                 options.Scope.Clear();
-                options.Scope.Add("openid email profile");
+                options.Scope.Add("openid email");
 
                 options.UsePkce = false;
                 options.SaveTokens = true;
