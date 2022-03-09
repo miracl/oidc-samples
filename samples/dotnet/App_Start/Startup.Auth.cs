@@ -42,7 +42,7 @@ namespace dotnet
                 },
                 PostLogoutRedirectUri = OidcRedirectUrl,
                 RedirectUri = OidcRedirectUrl,
-                Scope = "openid email profile",
+                Scope = "openid email",
                 UsePkce = false,
                 Notifications = new OpenIdConnectAuthenticationNotifications()
                 {
