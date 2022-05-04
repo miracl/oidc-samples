@@ -38,7 +38,7 @@ jobs:
 
   build-docker:
     needs: build-dotnet
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-buildx-action@v1
@@ -62,7 +62,7 @@ jobs:
 
   run-integration-tests-with-proxy:
     needs: build-docker
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Pull images
         run: |
@@ -121,7 +121,7 @@ jobs:
 
   run-integration-tests:
     needs: build-docker
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Pull images
         run: |
