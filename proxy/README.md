@@ -12,6 +12,6 @@ proxy, using Man-In-The-Middle (MITM).
 ### MITM
 
 A POST request to the `/session` endpoint starts a MITM session. The body of the
-request should contain JSON document with `mediatorUrl` property. This property
+request should contain JSON document with `modifyUrl` property. This property
 is the URL where the proxy will redirect all traffic until the session is
 stopped. A `DELETE` request to the `/session` endpoint stops the session.

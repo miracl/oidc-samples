@@ -2,8 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 )
+
+var errInvalidLogin = errors.New("invalid login")
 
 type sampleClient struct {
 	cookies    []*http.Cookie
@@ -46,6 +51,11 @@ func (s *sampleClient) login(redirectURL string) error {
 	sessionURL, s.cookies, err = getResponse(req, s.httpClient)
 	if err != nil {
 		return err
+	}
+
+	_, err = url.Parse(string(sessionURL))
+	if err != nil {
+		return fmt.Errorf("%w: %s", errInvalidLogin, err.Error())
 	}
 
 	s.sessionURL = string(sessionURL)

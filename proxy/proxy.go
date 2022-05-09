@@ -96,12 +96,13 @@ func (p *proxy) modifyResponse(proxiedResp *http.Response, ctx *goproxy.ProxyCtx
 	client := &http.Client{}
 
 	p.sessionMux.RLock()
-	modifyReq, _ := http.NewRequest(proxiedResp.Request.Method, p.session.ModifyURL, nil)
+	modifyReq, _ := http.NewRequest(proxiedResp.Request.Method, p.session.ModifyURL, http.NoBody)
 	p.sessionMux.RUnlock()
 
 	// copy body and headers from the response that the proxy intercepted
 	// to the place where they can be modified and returned back as response
 	modifyReq.Header = proxiedResp.Header
+	modifyReq.Header.Add("X-Forwarded-Host", proxiedResp.Request.URL.String())
 	modifyReq.Body = proxiedResp.Body
 	modifiedResp, err := client.Do(modifyReq)
 
