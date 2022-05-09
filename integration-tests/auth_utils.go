@@ -49,7 +49,7 @@ func authenticate(httpClient *http.Client, identity identity, userID string, pin
 	// Call to /rps/v2/authenticate endpoint.
 	authResponse, err := authenticateRequest(httpClient, p2Response.AuthOTT)
 	if err != nil {
-		return nil, fmt.Errorf("error makint the authenticate request: %w", err)
+		return nil, fmt.Errorf("error making the authenticate request: %w", err)
 	}
 	if authResponse.Status != 200 {
 		return nil, fmt.Errorf("error making the authenticate request, status: %v", authResponse.Status)
