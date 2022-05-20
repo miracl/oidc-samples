@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -62,6 +63,8 @@ func TestAuth(t *testing.T) {
 }
 
 func TestValidateSignature(t *testing.T) {
+	if os.Getenv("MODIFY") != "true" {
+		t.Skip("Skipping testing if not in MODIFY environment")
 	}
 
 	if options.proxyHost == "" || options.proxyPort == "" || options.modifyHost == "" || options.modifyPort == "" {

@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&options.redirectURL, "redirect-url", "http://localhost:8000/login", "the redirect url from the portal app")
 	flag.StringVar(&options.apiURL, "api-url", "https://api.mpin.io", "the mpin api URL")
 	flag.StringVar(&options.sampleURL, "sample-url", "http://127.0.0.1:8000", "the sample URL")
-	flag.StringVar(&options.proxyHost, "proxy-host", "", "Sample's proxy HOST")
+	flag.StringVar(&options.proxyHost, "proxy-host", "127.0.0.1", "Sample's proxy HOST")
 	flag.StringVar(&options.proxyPort, "proxy-port", "", "Sample's proxy PORT")
 	flag.StringVar(&options.modifyHost, "modify-host", "", "Sample's modifier HOST")
 	flag.StringVar(&options.modifyPort, "modify-port", "", "Sample's modifier PORT")
