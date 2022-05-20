@@ -51,7 +51,7 @@ jobs:
 
   build-docker-windows:
     needs: lint-go
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-buildx-action@v1
