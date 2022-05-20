@@ -1,11 +1,11 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -62,9 +62,13 @@ func TestAuth(t *testing.T) {
 }
 
 func TestValidateSignature(t *testing.T) {
-	// TODO: make these flags
-	proxyHost := "127.0.0.1"
-	proxyPort := "8080"
+	if options.skipModifyTests {
+		t.Skip("skip TestValidateSignature")
+	}
+
+	if options.proxyHost == "" || options.proxyPort == "" || options.sampleName == "" {
+		t.Fatal("sample-name, proxy-host or proxy-port are missing")
+	}
 
 	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
 	httpClient := &http.Client{
@@ -73,28 +77,18 @@ func TestValidateSignature(t *testing.T) {
 		},
 	}
 
-	payload := struct {
-		ModifyURL string `json:"modifyUrl"`
-	}{
-		ModifyURL: "http://127.0.0.1:8081/modifySignature",
-	}
+	client := newSampleClient(options.sampleURL, httpClient)
+	client.restart(options.restarterHost, options.restarterPort, options.sampleName)
 
-	prreq, err := newRequest(fmt.Sprintf("http://%v:%v/session", proxyHost, proxyPort), "POST", payload)
-	if err != nil {
-		t.Fatalf("Error making request to the proxy: %v", err)
-	}
+	m := newModifier(modifySignatureHandler, options.proxyHost, options.proxyPort, httpClient)
+	m.start()
 
-	_, _, err = getResponse(prreq, httpClient)
-	if err != nil {
-		t.Fatalf("Error when receiving the proxy response: %v", err)
-	}
+	defer m.stop()
 
 	name := uuid.New().String()
 	userID := fmt.Sprintf("%v@example.com", name)
 	deviceName := "The device of " + name
 	pin := randPIN()
-
-	client := newSampleClient(options.sampleURL, httpClient)
 
 	authorizeRequestURL, err := client.authorize()
 	if err != nil {
@@ -121,23 +115,47 @@ func TestValidateSignature(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error when the signature is invalid")
 	}
+}
 
-	if !errors.Is(err, errInvalidLogin) {
-		t.Fatal("Expected invalid login error")
-	}
-
-	if !strings.Contains(err.Error(), "Invalid ID token") {
-		t.Fatalf("Expected Invalid ID token error message")
-	}
-
-	// stop the proxy modifying session
-	prreq, err = newRequest(fmt.Sprintf("http://%v:%v/session", proxyHost, proxyPort), "DELETE", http.NoBody)
+func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		t.Fatalf("Error when making stop session request to the proxy: %v", err)
+		w.Write([]byte(fmt.Sprintf("ERROR is: %#v", err.Error())))
+		return
 	}
 
-	_, _, err = getResponse(prreq, httpClient)
-	if err != nil {
-		t.Fatalf("Error on proxy response: %v", err)
+	defer r.Body.Close()
+
+	const jwksUri = "https://api.mpin.io:443/oidc/certs"
+
+	originalRequestURL := r.Header.Get("X-Forwarded-Host")
+	if originalRequestURL == jwksUri {
+		keys := struct {
+			Keys []map[string]string `json:"keys"`
+		}{}
+
+		if err = json.Unmarshal(body, &keys); err != nil {
+			w.Write([]byte(fmt.Sprintf("/oidc/certs keys decoding error: %#v", err.Error())))
+			return
+		}
+
+		keys.Keys[0]["n"] = "invalid"
+		keys.Keys[1]["n"] = "invalid"
+
+		body, err = json.Marshal(keys)
+		if err != nil {
+			w.Write([]byte(fmt.Sprintf("keys encoding error: %#v", err.Error())))
+			return
+		}
 	}
+
+	for k, v := range r.Header {
+		if k != "X-Forwarded-Host" {
+			for _, hv := range v {
+				w.Header().Set(k, hv)
+			}
+		}
+	}
+
+	w.Write(body)
 }
