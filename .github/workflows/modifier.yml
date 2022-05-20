@@ -1,0 +1,77 @@
+name: proxy
+
+on:
+  push:
+    paths:
+      - "modifier/**"
+      - ".github/workflows/modifier.yml"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: miracl/oidc-samples/modifier
+  WINDOWS_IMAGE_TAG: latest-windows
+  DOCKER_BUILD_CONTEXT: modifier
+
+jobs:
+  lint-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.*
+      - name: Go lint
+        run: test -z "$(gofmt -s -l . 2>&1 | grep -v vendor | tee /dev/stderr)"
+
+  build-docker:
+    needs: lint-go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: ${{ env.DOCKER_BUILD_CONTEXT }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # build-docker-windows:
+  #   needs: lint-go
+  #   runs-on: windows-2019
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: docker/setup-buildx-action@v1
+  #     - uses: docker/login-action@v1
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #     - id: meta
+  #       uses: docker/metadata-action@v3
+  #       with:
+  #         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+  #         flavor: |
+  #           latest=${{ github.ref == 'refs/heads/master' }}
+  #           suffix=-windows,onlatest=${{ github.ref == 'refs/heads/master' }}
+  #         tags: |
+  #           type=raw,value=${{ github.sha }}
+  #     - name: Docker build & push
+  #       run: |
+  #         docker build --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.WINDOWS_IMAGE_TAG }} -f proxy/Dockerfile-win proxy/
+  #         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.WINDOWS_IMAGE_TAG }}
+  #         docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.WINDOWS_IMAGE_TAG }} ${{ steps.meta.outputs.tags}}
+  #         docker push ${{ steps.meta.outputs.tags}}
