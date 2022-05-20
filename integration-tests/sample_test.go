@@ -62,9 +62,11 @@ func TestAuth(t *testing.T) {
 }
 
 func TestValidateSignature(t *testing.T) {
-	// TODO: make these flags
-	proxyHost := "127.0.0.1"
-	proxyPort := "8080"
+	}
+
+	if options.proxyHost == "" || options.proxyPort == "" || options.modifyHost == "" || options.modifyPort == "" {
+		t.Fatal("proxy-host, proxy-port, modify-host and modify-port are required to run this test")
+	}
 
 	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
 	httpClient := &http.Client{
@@ -76,10 +78,10 @@ func TestValidateSignature(t *testing.T) {
 	payload := struct {
 		ModifyURL string `json:"modifyUrl"`
 	}{
-		ModifyURL: "http://127.0.0.1:8081/modifySignature",
+		ModifyURL: "http://" + options.modifyHost + ":" + options.modifyPort + "/modifySignature", //127.0.0.1:8081/modifySignature",
 	}
 
-	prreq, err := newRequest(fmt.Sprintf("http://%v:%v/session", proxyHost, proxyPort), "POST", payload)
+	prreq, err := newRequest(fmt.Sprintf("http://%v:%v/session", options.proxyHost, options.proxyPort), "POST", payload)
 	if err != nil {
 		t.Fatalf("Error making request to the proxy: %v", err)
 	}
@@ -131,7 +133,7 @@ func TestValidateSignature(t *testing.T) {
 	}
 
 	// stop the proxy modifying session
-	prreq, err = newRequest(fmt.Sprintf("http://%v:%v/session", proxyHost, proxyPort), "DELETE", http.NoBody)
+	prreq, err = newRequest(fmt.Sprintf("http://%v:%v/session", options.proxyHost, options.proxyPort), "DELETE", http.NoBody)
 	if err != nil {
 		t.Fatalf("Error when making stop session request to the proxy: %v", err)
 	}
