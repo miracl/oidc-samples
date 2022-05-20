@@ -24,6 +24,22 @@ func newSampleClient(url string, httpClient *http.Client) *sampleClient {
 	}
 }
 
+func (s *sampleClient) ping() error {
+	req, err := http.NewRequest("HEAD", s.url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	resp.Body.Close()
+
+	return nil
+}
+
 func (s *sampleClient) authorize() (responseBody []byte, err error) {
 	req, err := newRequest(s.url, "GET", nil)
 	if err != nil {
@@ -85,4 +101,27 @@ func (s *sampleClient) addCookies(req *http.Request) {
 	for _, cookie := range s.cookies {
 		req.AddCookie(cookie)
 	}
+}
+
+func (s *sampleClient) restart(restarterHost, restarterPort, sampleName string) error {
+	restartSampleReq, err := newRequest(
+		fmt.Sprintf("http://%s:%s/restart?name=%s", restarterHost, restarterPort, sampleName),
+		"POST",
+		http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = getResponse(restartSampleReq, s.httpClient)
+	if err != nil {
+		return err
+	}
+
+	for {
+		if err = s.ping(); err == nil {
+			break
+		}
+	}
+
+	return nil
 }
