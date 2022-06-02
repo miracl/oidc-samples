@@ -37,14 +37,22 @@ const { Issuer, custom } = require('openid-client')
   })
 
   if (PROXY_HOST && PROXY_PORT && CA_CERT) {
-    client[custom.http_options] = function (options) {
-      const agent = tunnel.httpsOverHttp({
-        ca: [fs.readFileSync(CA_CERT)],
-        proxy: {
-          host: PROXY_HOST,
-          port: PROXY_PORT
-        }
-      })
+    const agent = tunnel.httpsOverHttp({
+      ca: [fs.readFileSync(CA_CERT)],
+      proxy: {
+        host: PROXY_HOST,
+        port: PROXY_PORT
+      }
+    })
+
+    client[custom.http_options] = function (url, options) {
+      console.log(url)
+      options.agent = agent
+      return options
+    }
+
+    issuer[custom.http_options] = function (url, options) {
+      console.log(url)
       options.agent = agent
       return options
     }
