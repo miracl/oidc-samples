@@ -5,6 +5,7 @@ on:
     paths:
       - "samples/dotnet/**"
       - ".github/workflows/dotnet.yml"
+      - "restarter/**"
   schedule:
     - cron: '0 7 * * *'
 
@@ -21,7 +22,7 @@ env:
 
 jobs:
   build-dotnet:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
       - name: Setup MSBuild
@@ -75,6 +76,10 @@ jobs:
           --publish 8080:8080
           --cidfile ${{ env.CID_FILE }}
           ${{ env.PROXY_IMAGE }}
+      - name: Checkout repository content
+        uses: actions/checkout@v2
+      - name: Run the restarter
+        run: go run ./restarter/main.go &
       - name: Sleep for a seconds
         run: sleep 1s
         shell: bash
@@ -91,6 +96,7 @@ jobs:
         run: docker run
           --detach
           --publish 8000:8000
+          --name sample
           --env CLIENT_ID
           --env CLIENT_SECRET
           --env REDIRECT_URL=http://sample:8000/login
@@ -114,9 +120,11 @@ jobs:
         run: docker run
           --env CLIENT_ID
           --env CLIENT_SECRET
+          --env SAMPLE_NAME=sample
           --env SAMPLE_IP=${{ steps.sample.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
           --env REDIRECT_URL=http://sample:8000/login
+          --env SKIP_MODIFY_TESTS=false
           ${{ env.TESTS_IMAGE }}
 
   run-integration-tests:
@@ -138,7 +146,7 @@ jobs:
           --cidfile $CID_FILE
           ${{ env.SAMPLE_IMAGE }}
       - name: Sleep for 1 seconds
-        run: sleep 1s
+        run: sleep 2s
         shell: bash
       - name: Info
         id: info
@@ -156,4 +164,5 @@ jobs:
           --env SAMPLE_IP=${{ steps.info.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
           --env REDIRECT_URL=http://sample:8000/login
+          --env SKIP_MODIFY_TESTS=true
           ${{ env.TESTS_IMAGE }}
