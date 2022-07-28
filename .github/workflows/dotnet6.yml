@@ -1,37 +1,37 @@
-name: dotnet5
+name: dotnet6
 
 on:
   push:
     paths:
-      - "samples/dotnet5/**"
-      - ".github/workflows/dotnet5.yml"
+      - "samples/dotnet6/**"
+      - ".github/workflows/dotnet6.yml"
       - "restarter/**"
   schedule:
     - cron: '0 7 * * *'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: miracl/oidc-samples/samples/dotnet5
-  DOCKER_BUILD_CONTEXT: samples/dotnet5
-  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/dotnet5:${{ github.sha }}
+  IMAGE_NAME: miracl/oidc-samples/samples/dotnet6
+  DOCKER_BUILD_CONTEXT: samples/dotnet6
+  SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/dotnet6:${{ github.sha }}
   PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
   TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest
   CLIENT_ID: ${{ secrets.CLIENT_ID }}
   CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
 
 jobs:
-  lint-dotnet5:
+  lint-dotnet6:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: "5.0"
+          dotnet-version: "6.0"
       - name: .NET Core lint
-        run: dotnet build samples/dotnet5/OidcSample.csproj
+        run: dotnet build samples/dotnet6/OidcSample.csproj
 
   build-docker:
-    needs: lint-dotnet5
+    needs: lint-dotnet6
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
