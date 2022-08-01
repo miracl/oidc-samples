@@ -54,7 +54,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ github.sha }}
-      - name: Docker login, build & push
+      - name: Docker login, build & push & test
         run: |
           docker build --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest samples/dotnet/
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
