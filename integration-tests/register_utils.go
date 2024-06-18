@@ -17,29 +17,29 @@ func register(httpClient *http.Client, userID string, deviceName string, pin int
 	// Call to /authorize endpoint.
 	authorizeResponse, err := authorizeRequest(httpClient, authorizeRequestURL)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error making authorize request: %w", err)
 	}
 
 	// Call to /activate/initiate endpoint.
 	cvResponse, err := customVerifyRequest(httpClient, userID, deviceName)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error making custom verify request: %w", err)
 	}
 
 	// Call to /rps/v2/user endpoint.
 	qrURL, err := url.Parse(authorizeResponse.QRURL)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error parsing authorize response: %w", err)
 	}
 	regResponse, err := registerRequest(httpClient, userID, deviceName, qrURL.Fragment, cvResponse.ActivateToken)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error making register request: %w", err)
 	}
 
 	// Call to /signature endpoint.
 	sigResponse, err := signatureRequest(httpClient, regResponse.MPinID, regResponse.RegOTT)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error making signature request: %w", err)
 	}
 
 	// Call to /dta/ID endpoint.
@@ -48,13 +48,13 @@ func register(httpClient *http.Client, userID string, deviceName string, pin int
 	// Combine both client secrets.
 	Q, err := wrap.RecombineG1BN254CX(hex2bytes(sigResponse.ClientSecretShare), hex2bytes(csResponse.ClientSecret))
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error combining  both client secrets: %w", err)
 	}
 
 	// First extract pin from the combine client secret, in order to get the token.
 	CS, err := wrap.ExtractPINBN254CX(int(gomiracl.SHA256), hex2bytes(regResponse.MPinID), pin, Q)
 	if err != nil {
-		return identity{}, err
+		return identity{}, fmt.Errorf("error extracting pin from the combined client secret: %w", err)
 	}
 
 	return identity{
@@ -72,12 +72,12 @@ func authorizeRequest(httpClient *http.Client, requestURL string) (*authorizeRes
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making authorize post request: %w", err)
 	}
 
 	var authorizeResponse *authorizeResponse
 	if err := json.Unmarshal(resp, &authorizeResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling authorize request: %w", err)
 	}
 
 	return authorizeResponse, nil
@@ -103,12 +103,12 @@ func customVerifyRequest(httpClient *http.Client, userID string, deviceName stri
 		header{Key: "Authorization", Value: authHeaderValue},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making custom verify post request: %w", err)
 	}
 
 	var customVerificationResponse *customVerificationResponse
 	if err := json.Unmarshal(resp, &customVerificationResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling custom verification response: %w", err)
 	}
 
 	return customVerificationResponse, nil
@@ -134,12 +134,12 @@ func registerRequest(httpClient *http.Client, userID string, deviceName string, 
 		header{Key: "X-MIRACL-CID", Value: "mcl"},
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making register put request: %w", err)
 	}
 
 	var registerResponse *registerResponse
 	if err := json.Unmarshal(resp, &registerResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling register response: %w", err)
 	}
 
 	return registerResponse, nil
@@ -153,12 +153,12 @@ func signatureRequest(httpClient *http.Client, mpinID string, regOTT string) (*s
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making signature get request: %w", err)
 	}
 
 	var sigResponse *signatureResponse
 	if err := json.Unmarshal(resp, &sigResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling signature response: %w", err)
 	}
 
 	if !(sigResponse.CS2URL != "" && sigResponse.ClientSecretShare != "" &&
@@ -177,12 +177,12 @@ func clientSecretRequest(httpClient *http.Client, cs2url string) (*clientSecretR
 		nil,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making client secret get request: %w", err)
 	}
 
 	var csResponse *clientSecretResponse
 	if err := json.Unmarshal(resp, &csResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error unmarshalling client secret response: %w", err)
 	}
 
 	return csResponse, nil
