@@ -1,6 +1,8 @@
 """
 This example integrates the IdPyOIDC library with the MIRACL Trust platform.
 """
+
+import argparse
 import os
 import random
 from urllib.parse import parse_qs
@@ -12,17 +14,44 @@ session_storage = {}
 proxy_host = os.environ.get("PROXY_HOST")
 proxy_port = os.environ.get("PROXY_PORT")
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-cid", "--client-id", dest="client_id", help="Client ID")
+parser.add_argument(
+    "-cs", "--client-secret", dest="client_secret", help="Client Secret"
+)
+parser.add_argument("-iss", "--issuer", dest="issuer", help="OIDC Issuer")
+
+args = parser.parse_args()
+
 
 def new_app():
     """
     Creates an instance of a flask application, relying party handler and a relying party client.
     """
     application = Flask(__name__)
+
+    if args.client_id:
+        client_id = args.client_id
+    else:
+        client_id = os.environ.get("CLIENT_ID")
+
+    if args.client_secret:
+        client_secret = args.client_secret
+    else:
+        client_secret = os.environ.get("CLIENT_SECRET")
+
+    if args.issuer:
+        issuer = args.issuer
+    elif os.environ.get("ISSUER"):
+        issuer = os.environ.get("ISSUER")
+    else:
+        issuer = "https://api.mpin.io/"
+
     client_configs = {
         "miracl": {
-            "issuer": "https://api.mpin.io/",
-            "client_id": os.environ.get("CLIENT_ID"),
-            "client_secret": os.environ.get("CLIENT_SECRET"),
+            "issuer": issuer,
+            "client_id": client_id,
+            "client_secret": client_secret,
             "client_type": "oidc",
             "redirect_uris": ["http://localhost:8000/login"],
         }
@@ -54,9 +83,7 @@ def index():
     """
     Makes the request to the authorization endpoint, returns the user info if session id is found.
     """
-    res = rph.init_authorization(
-        client=client, req_args={"scope": ["openid", "email"]}
-    )
+    res = rph.init_authorization(client=client, req_args={"scope": ["openid", "email"]})
     session_id = request.args.get("session")
     if session_id is None:
         return redirect(res)

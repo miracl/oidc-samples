@@ -79,8 +79,8 @@ jobs:
           --env CLIENT_ID
           --env CLIENT_SECRET
           $SAMPLE_IMAGE
-      - name: Sleep for a seconds
-        run: sleep 3s
+      - name: Sleep for some seconds
+        run: sleep 5s
         shell: bash
       - name: Run integration tests
         run: docker run
@@ -120,8 +120,8 @@ jobs:
           --env PROXY_HOST=127.0.0.1
           --env PROXY_PORT=8080
           $SAMPLE_IMAGE
-      - name: Sleep for a seconds
-        run: sleep 4s
+      - name: Sleep for some seconds
+        run: sleep 5s
         shell: bash
       - name: Run integration tests
         run: docker run

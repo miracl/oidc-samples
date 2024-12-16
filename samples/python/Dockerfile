@@ -16,4 +16,4 @@ COPY --from=proxy /src/ca.crt /usr/local/share/ca-certificates/proxy.crt
 RUN update-ca-certificates
 
 EXPOSE 8000
-CMD python3 -m flask run --host=0.0.0.0 --port=8000
+CMD python app.py
