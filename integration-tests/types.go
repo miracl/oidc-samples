@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-//Generic types
+// Generic types
 
 type identity struct {
 	MPinID []byte
@@ -32,13 +32,31 @@ func (err cryptoError) error() string {
 	return fmt.Sprintf("Crypto error exited with code %v", err.exitCode)
 }
 
-//Registration responses
+// Registration responses
 
-type customVerificationResponse struct {
-	MPinID        string `json:"mpinId"`
-	HashMPinID    string `json:"hashMPinId"`
-	ActivateToken string `json:"actToken"`
-	ExpireTime    int64  `json:"expireTime"`
+type sessionResponse struct {
+	AccessURL string `json:"accessURL"`
+	QRURL     string `json:"qrURL"`
+	WebOTT    string `json:"webOTT"`
+}
+
+type verificationURLResponse struct {
+	VerificationURL string `json:"verificationURL"`
+}
+
+type confirmationRequest struct {
+	UserID           string `json:"userId"`
+	Code             string `json:"code"`
+	ConfirmMissmatch bool   `json:"confirmMissmatch"`
+}
+
+type confirmationResponse struct {
+	ActivateToken           string `json:"actToken"`
+	AccessID                string `json:"accessId"`
+	State                   string `json:"state"`
+	Nonce                   string `json:"nonce"`
+	ExpireTime              int64  `json:"expireTime"`
+	VerificationRedirectURL string `json:"verificationRedirectUrl"`
 }
 
 type registerResponse struct {
@@ -72,7 +90,7 @@ type clientSecretResponse struct {
 	Version         string `json:"version"`
 }
 
-//Authentication responses
+// Authentication responses
 
 type pass1Response struct {
 	Y string `json:"y"`

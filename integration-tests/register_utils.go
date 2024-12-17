@@ -12,26 +12,62 @@ import (
 	"code.miracl.com/mfa/pkg/gomiracl/wrap"
 )
 
-func register(httpClient *http.Client, userID string, deviceName string, pin int, authorizeRequestURL string) (i identity, err error) {
+func createSession(httpClient *http.Client, userID string) (*sessionResponse, error) {
+	sessionRequest := &struct {
+		ProjectID string `json:"projectId"`
+		UserID    string `json:"userId"`
+	}{
+		options.projectID,
+		userID,
+	}
 
-	// Call to /authorize endpoint.
-	authorizeResponse, err := authorizeRequest(httpClient, authorizeRequestURL)
+	sessionResp, err := makeRequest(
+		httpClient,
+		options.apiURL+"/rps/v2/session",
+		http.MethodPost,
+		sessionRequest,
+		header{Key: "Content-Type", Value: "application/json"})
+	if err != nil {
+		return nil, err
+	}
+
+	var createSessionResponse *sessionResponse
+
+	if err := json.Unmarshal(sessionResp, &createSessionResponse); err != nil {
+		return nil, err
+	}
+
+	return createSessionResponse, nil
+}
+
+func register(httpClient *http.Client, userID string, deviceName string, pin int, accessID string) (i identity, err error) {
+	// Call to /verification endpoint.
+	verifyURL, err := verificationRequest(httpClient, userID, deviceName, accessID)
 	if err != nil {
 		return identity{}, err
 	}
 
-	// Call to /activate/initiate endpoint.
-	cvResponse, err := customVerifyRequest(httpClient, userID, deviceName)
+	verificationCode, err := getVerificationCode(verifyURL)
 	if err != nil {
 		return identity{}, err
 	}
 
+	activationToken, err := verificationConfirmation(httpClient, userID, verificationCode)
+	if err != nil {
+		return identity{}, err
+	}
+
+	id, err := newIdentity(httpClient, userID, deviceName, accessID, activationToken, pin)
+	if err != nil {
+		return identity{}, err
+	}
+
+	return id, nil
+}
+
+func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activationToken string, pin int) (i identity, err error) {
 	// Call to /rps/v2/user endpoint.
-	qrURL, err := url.Parse(authorizeResponse.QRURL)
-	if err != nil {
-		return identity{}, err
-	}
-	regResponse, err := registerRequest(httpClient, userID, deviceName, qrURL.Fragment, cvResponse.ActivateToken)
+	regResponse, err := registerRequest(httpClient, userID, deviceName, accessID, activationToken)
 	if err != nil {
 		return identity{}, err
 	}
@@ -83,47 +119,56 @@ func authorizeRequest(httpClient *http.Client, requestURL string) (*authorizeRes
 	return authorizeResponse, nil
 }
 
-func customVerifyRequest(httpClient *http.Client, userID string, deviceName string) (*customVerificationResponse, error) {
-	payload := struct {
-		UserID     string `json:"userId"`
-		DeviceName string `json:"deviceName"`
-	}{
-		userID,
-		deviceName,
-	}
-
+func verificationRequest(httpClient *http.Client, userID, deviceName, accessID string) (string, error) {
 	clientIdAndSecret := options.clientID + ":" + options.clientSecret
 	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIdAndSecret))
 
+	payload := struct {
+		ProjectID     string `json:"projectId"`
+		UserID        string `json:"userId"`
+		DeviceName    string `json:"deviceName"`
+		AccessID      string `json:"accessId"`
+		Delivery      string `json:"delivery"`
+		Authorization string `json:"-"`
+	}{
+		options.projectID,
+		userID,
+		deviceName,
+		accessID,
+		"no",
+		authHeaderValue,
+	}
+
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/activate/initiate",
+		// options.apiURL+"/activate/initiate",
+		options.apiURL+"/verification",
 		"POST",
 		payload,
 		header{Key: "Authorization", Value: authHeaderValue},
 	)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	var customVerificationResponse *customVerificationResponse
-	if err := json.Unmarshal(resp, &customVerificationResponse); err != nil {
-		return nil, err
+	var verificationResponse *verificationURLResponse
+	if err := json.Unmarshal(resp, &verificationResponse); err != nil {
+		return "", err
 	}
 
-	return customVerificationResponse, nil
+	return verificationResponse.VerificationURL, nil
 }
 
-func registerRequest(httpClient *http.Client, userID string, deviceName string, wid string, activateCode string) (*registerResponse, error) {
+func registerRequest(httpClient *http.Client, userID string, deviceName string, accessID string, activateCode string) (*registerResponse, error) {
 	payload := struct {
-		DeviceName   string `json:"deviceName"`
 		UserID       string `json:"userId"`
+		DeviceName   string `json:"deviceName"`
 		WID          string `json:"wid"`
 		ActivateCode string `json:"activateCode"`
 	}{
 		DeviceName:   deviceName,
 		UserID:       userID,
-		WID:          wid,
+		WID:          accessID,
 		ActivateCode: activateCode,
 	}
 	resp, err := makeRequest(
@@ -157,6 +202,7 @@ func signatureRequest(httpClient *http.Client, mpinID string, regOTT string) (*s
 	}
 
 	var sigResponse *signatureResponse
+
 	if err := json.Unmarshal(resp, &sigResponse); err != nil {
 		return nil, err
 	}
@@ -186,4 +232,38 @@ func clientSecretRequest(httpClient *http.Client, cs2url string) (*clientSecretR
 	}
 
 	return csResponse, nil
+}
+
+func getVerificationCode(verifyURL string) (string, error) {
+	parsedURL, err := url.Parse(verifyURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse verification url: %w", err)
+	}
+
+	return parsedURL.Query().Get("code"), nil
+}
+
+func verificationConfirmation(httpClient *http.Client, userID, code string) (string, error) {
+	payload := &confirmationRequest{
+		UserID: userID,
+		Code:   code,
+	}
+
+	resp, err := makeRequest(
+		httpClient,
+		options.apiURL+"/verification/confirmation",
+		"POST",
+		payload,
+	)
+	if err != nil {
+		return "", fmt.Errorf("Error creating verification confirmation request: %w", err)
+	}
+
+	var res *confirmationResponse
+
+	if err := json.Unmarshal(resp, &res); err != nil {
+		return "", err
+	}
+
+	return res.ActivateToken, nil
 }

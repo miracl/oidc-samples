@@ -17,47 +17,41 @@ func TestAuth(t *testing.T) {
 	deviceName := "The device of " + name
 	pin := randPIN()
 
-	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
 	httpClient := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
-	client := newSampleClient(options.sampleURL, httpClient)
 
-	authorizeRequestURL, err := client.authorize()
+	sessionResponse, err := createSession(httpClient, userID)
 	if err != nil {
-		t.Fatalf("Error making initial request to the home page: %v", err)
+		t.Fatalf("failed to create session: %v", err.Error())
 	}
 
-	_, err = url.ParseRequestURI(string(authorizeRequestURL))
+	qrURL, err := url.Parse(sessionResponse.QRURL)
 	if err != nil {
-		t.Fatalf("Home page didn't respond with authorize url, error: %v, actual response: %v", err.Error(), string(authorizeRequestURL))
+		t.Fatalf("failed to parse session QR URL: %v", err.Error())
 	}
 
-	identity, err := register(httpClient, userID, deviceName, pin, string(authorizeRequestURL))
+	accessID := qrURL.Fragment
+
+	identity, err := register(httpClient, userID, deviceName, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
 
-	accessResponse, err := authenticate(httpClient, identity, userID, pin, string(authorizeRequestURL))
+	err = authenticate(httpClient, identity, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error authenticating: %v", err)
 	}
 
-	// Contains an URL, from which we can fetch the user info.
-	err = client.login(accessResponse.RedirectURL)
+	accessResponse, err := accessRequest(httpClient, sessionResponse.WebOTT)
 	if err != nil {
-		t.Fatalf("Error logging in: %v", err)
+		t.Fatalf("error making the access request: %v", err.Error())
 	}
 
-	userInfo, err := client.getUserInfo()
-	if err != nil {
-		t.Fatalf("Error getting user info: %v", err)
-	}
-
-	if userInfo.Email != userID {
-		t.Fatal("UserID  mismatch")
+	if accessResponse.UserID != userID {
+		t.Fatal("UserID mismatch")
 	}
 }
 
@@ -70,7 +64,6 @@ func TestValidateSignature(t *testing.T) {
 		t.Fatal("sample-name, proxy-host or proxy-port are missing")
 	}
 
-	// All samples generate a new state and redirect us to an /authorize URL, if we're not logged in.
 	httpClient := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -90,30 +83,36 @@ func TestValidateSignature(t *testing.T) {
 	deviceName := "The device of " + name
 	pin := randPIN()
 
-	authorizeRequestURL, err := client.authorize()
+	sessionResponse, err := createSession(httpClient, userID)
 	if err != nil {
-		t.Fatalf("Error making initial request to the home page: %v", err)
+		t.Fatalf("failed to create session: %v", err.Error())
 	}
 
-	_, err = url.ParseRequestURI(string(authorizeRequestURL))
+	qrURL, err := url.Parse(sessionResponse.QRURL)
 	if err != nil {
-		t.Fatalf("Home page didn't respond with authorize url, error: %v, actual response: %v", err.Error(), string(authorizeRequestURL))
+		t.Fatalf("failed to parse QR URL: %v", err.Error())
 	}
 
-	identity, err := register(httpClient, userID, deviceName, pin, string(authorizeRequestURL))
+	accessID := qrURL.Fragment
+
+	identity, err := register(httpClient, userID, deviceName, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
 
-	accessResponse, err := authenticate(httpClient, identity, userID, pin, string(authorizeRequestURL))
+	err = authenticate(httpClient, identity, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error authenticating: %v", err)
 	}
 
-	// Contains an URL, from which we can fetch the user info.
-	err = client.login(accessResponse.RedirectURL)
-	if err == nil {
-		t.Fatal("Expected error when the signature is invalid")
+	// Call to /rps/v2/access endpoint.
+	accessResponse, err := accessRequest(httpClient, sessionResponse.WebOTT)
+	if err != nil {
+		t.Fatalf("error making the access request: %v", err.Error())
+	}
+
+	if accessResponse.UserID != userID {
+		t.Fatal("UserID mismatch")
 	}
 }
 
