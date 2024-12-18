@@ -16,8 +16,9 @@ env:
   SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/dotnet:${{ github.sha }}
   PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest-windows
   TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest-windows
-  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_ID: ${{ vars.CLIENT_ID }}
   CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   CID_FILE: sample.cid
 
 jobs:
@@ -119,6 +120,7 @@ jobs:
         run: docker run
           --env CLIENT_ID
           --env CLIENT_SECRET
+          --env PROJECT_ID
           --env SAMPLE_NAME=sample
           --env SAMPLE_IP=${{ steps.sample.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
@@ -160,6 +162,7 @@ jobs:
         run: docker run
           --env CLIENT_ID
           --env CLIENT_SECRET
+          --env PROJECT_ID
           --env SAMPLE_IP=${{ steps.info.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
           --env REDIRECT_URL=http://sample:8000/login
