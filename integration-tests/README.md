@@ -7,6 +7,17 @@ implementation with popular client side implementations.
 
 The integration test defines some flags. Use the following command to see them.
 
+### Setup
+
+The integration tests can be run directly with Go or with a Docker container.
+You must pass the app's credentials to the tests through environment
+variables as follows:
+
+``` bash
+export CLIENT_ID=<client-id>
+export CLIENT_SECRET=<client-secret>
+```
+
 ### Run
 
 ```bash
