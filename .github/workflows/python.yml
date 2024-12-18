@@ -16,8 +16,9 @@ env:
   SAMPLE_IMAGE: ghcr.io/miracl/oidc-samples/samples/python:${{ github.sha }}
   PROXY_IMAGE: ghcr.io/miracl/oidc-samples/proxy:latest
   TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest
-  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  CLIENT_ID: ${{ vars.CLIENT_ID }}
   CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
 
 jobs:
   pylint-check:
@@ -88,6 +89,7 @@ jobs:
           $TESTS_IMAGE
             --client-id $CLIENT_ID
             --client-secret $CLIENT_SECRET
+            --project-id $PROJECT_ID
 
   run-integration-tests-with-proxy:
     needs: build-docker
@@ -129,6 +131,7 @@ jobs:
           $TESTS_IMAGE
             --client-id $CLIENT_ID
             --client-secret $CLIENT_SECRET
+            --project-id $PROJECT_ID
             --sample-name sample
             --proxy-host 127.0.0.1
             --proxy-port 8080
