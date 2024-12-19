@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 )
 
 type modifier struct {
@@ -28,12 +29,14 @@ func (m *modifier) start() {
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Fatal(err)
+
 		return
 	}
 
 	m.listener = l
 
 	http.HandleFunc("/", m.handler)
+
 	go func() {
 		_ = http.Serve(m.listener, nil)
 	}()
@@ -57,7 +60,7 @@ func (m *modifier) setupSession() {
 	payload := struct {
 		ModifyURL string `json:"modifyUrl"`
 	}{
-		ModifyURL: "http://127.0.0.1:" + fmt.Sprint(m.getPort()),
+		ModifyURL: "http://127.0.0.1:" + strconv.Itoa(m.getPort()),
 	}
 
 	prreq, err := newRequest(fmt.Sprintf("http://%v:%v/session", m.proxyHost, m.proxyPort), "POST", payload)

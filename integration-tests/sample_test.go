@@ -18,7 +18,7 @@ func TestAuth(t *testing.T) {
 	pin := randPIN()
 
 	httpClient := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
@@ -65,7 +65,7 @@ func TestValidateSignature(t *testing.T) {
 	}
 
 	httpClient := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
@@ -120,21 +120,23 @@ func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("ERROR is: %#v", err.Error())))
+
 		return
 	}
 
 	defer r.Body.Close()
 
-	const jwksUri = "https://api.mpin.io:443/oidc/certs"
+	const jwksURI = "https://api.mpin.io:443/oidc/certs"
 
 	originalRequestURL := r.Header.Get("X-Forwarded-Host")
-	if originalRequestURL == jwksUri {
+	if originalRequestURL == jwksURI {
 		keys := struct {
 			Keys []map[string]string `json:"keys"`
 		}{}
 
 		if err = json.Unmarshal(body, &keys); err != nil {
 			w.Write([]byte(fmt.Sprintf("/oidc/certs keys decoding error: %#v", err.Error())))
+
 			return
 		}
 
@@ -144,6 +146,7 @@ func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
 		body, err = json.Marshal(keys)
 		if err != nil {
 			w.Write([]byte(fmt.Sprintf("keys encoding error: %#v", err.Error())))
+
 			return
 		}
 	}

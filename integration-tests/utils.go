@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-func newRequest(url string, method string, payload interface{}, headers ...header) (req *http.Request, err error) {
+func newRequest(url, method string, payload interface{}, headers ...header) (req *http.Request, err error) {
 	if method == "GET" {
-		req, err = http.NewRequest(method, url, nil)
+		req, err = http.NewRequest(method, url, http.NoBody)
 	} else {
 		reqPayloadJSON, err := json.Marshal(payload)
 		if err != nil {
@@ -20,6 +20,9 @@ func newRequest(url string, method string, payload interface{}, headers ...heade
 		}
 
 		req, err = http.NewRequest(method, url, bytes.NewReader(reqPayloadJSON))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err != nil {
@@ -29,6 +32,7 @@ func newRequest(url string, method string, payload interface{}, headers ...heade
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
 	}
+
 	return req, err
 }
 
@@ -37,14 +41,16 @@ func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byt
 	if err != nil {
 		return nil, nil, err
 	}
+
 	defer resp.Body.Close()
 
 	// Whenever we're redirected we take the Location and return it.
-	if resp.StatusCode == 302 || resp.StatusCode == 301 {
+	if resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusMovedPermanently {
 		redirectLocation, err := resp.Location()
 		if err != nil {
 			return nil, nil, err
 		}
+
 		return []byte(redirectLocation.String()), resp.Cookies(), nil
 	}
 
@@ -56,13 +62,14 @@ func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byt
 	return responseBody, resp.Cookies(), nil
 }
 
-func makeRequest(httpClient *http.Client, url string, method string, payload interface{}, headers ...header) (responseBody []byte, err error) {
+func makeRequest(httpClient *http.Client, url, method string, payload interface{}, headers ...header) (responseBody []byte, err error) {
 	req, err := newRequest(url, method, payload, headers...)
 	if err != nil {
 		return nil, err
 	}
 
 	res, _, err := getResponse(req, httpClient)
+
 	return res, err
 }
 
@@ -74,10 +81,12 @@ func hex2bytes(s string) []byte {
 		a, _ := strconv.ParseInt(s[i:i+2], 16, 32)
 		data[i/2] = byte(a)
 	}
+
 	return data
 }
 
 func randPIN() int {
 	mathRand.Seed(time.Now().UnixNano())
+
 	return mathRand.Intn(9000) + 1000
 }
