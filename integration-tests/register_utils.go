@@ -40,7 +40,7 @@ func createSession(httpClient *http.Client, userID string) (*sessionResponse, er
 	return createSessionResponse, nil
 }
 
-func register(httpClient *http.Client, userID string, deviceName string, pin int, accessID string) (i identity, err error) {
+func register(httpClient *http.Client, userID, deviceName string, pin int, accessID string) (i identity, err error) {
 	// Call to /verification endpoint.
 	verifyURL, err := verificationRequest(httpClient, userID, deviceName, accessID)
 	if err != nil {
@@ -80,6 +80,9 @@ func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activati
 
 	// Call to /dta/ID endpoint.
 	csResponse, err := clientSecretRequest(httpClient, sigResponse.CS2URL)
+	if err != nil {
+		return identity{}, err
+	}
 
 	// Combine both client secrets.
 	Q, err := wrap.RecombineG1BN254CX(hex2bytes(sigResponse.ClientSecretShare), hex2bytes(csResponse.ClientSecret))
@@ -100,28 +103,9 @@ func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activati
 	}, nil
 }
 
-func authorizeRequest(httpClient *http.Client, requestURL string) (*authorizeResponse, error) {
-	resp, err := makeRequest(
-		httpClient,
-		requestURL,
-		"POST",
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	var authorizeResponse *authorizeResponse
-	if err := json.Unmarshal(resp, &authorizeResponse); err != nil {
-		return nil, err
-	}
-
-	return authorizeResponse, nil
-}
-
 func verificationRequest(httpClient *http.Client, userID, deviceName, accessID string) (string, error) {
-	clientIdAndSecret := options.clientID + ":" + options.clientSecret
-	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIdAndSecret))
+	clientIDAndSecret := options.clientID + ":" + options.clientSecret
+	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIDAndSecret))
 
 	payload := struct {
 		ProjectID     string `json:"projectId"`
@@ -159,7 +143,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID s
 	return verificationResponse.VerificationURL, nil
 }
 
-func registerRequest(httpClient *http.Client, userID string, deviceName string, accessID string, activateCode string) (*registerResponse, error) {
+func registerRequest(httpClient *http.Client, userID, deviceName, accessID, activateCode string) (*registerResponse, error) {
 	payload := struct {
 		UserID       string `json:"userId"`
 		DeviceName   string `json:"deviceName"`
@@ -171,6 +155,7 @@ func registerRequest(httpClient *http.Client, userID string, deviceName string, 
 		WID:          accessID,
 		ActivateCode: activateCode,
 	}
+
 	resp, err := makeRequest(
 		httpClient,
 		options.apiURL+"/rps/v2/user",
@@ -190,7 +175,9 @@ func registerRequest(httpClient *http.Client, userID string, deviceName string, 
 	return registerResponse, nil
 }
 
-func signatureRequest(httpClient *http.Client, mpinID string, regOTT string) (*signatureResponse, error) {
+var errInvalidSignatureResponse = errors.New("invalid signature response")
+
+func signatureRequest(httpClient *http.Client, mpinID, regOTT string) (*signatureResponse, error) {
 	resp, err := makeRequest(
 		httpClient,
 		fmt.Sprintf(options.apiURL+"/rps/v2/signature/%v?regOTT=%v", mpinID, regOTT),
@@ -209,7 +196,7 @@ func signatureRequest(httpClient *http.Client, mpinID string, regOTT string) (*s
 
 	if !(sigResponse.CS2URL != "" && sigResponse.ClientSecretShare != "" &&
 		sigResponse.Curve != "" && sigResponse.DTAs != "") {
-		return nil, errors.New("Invalid signature response")
+		return nil, errInvalidSignatureResponse
 	}
 
 	return sigResponse, nil
@@ -256,7 +243,7 @@ func verificationConfirmation(httpClient *http.Client, userID, code string) (str
 		payload,
 	)
 	if err != nil {
-		return "", fmt.Errorf("Error creating verification confirmation request: %w", err)
+		return "", fmt.Errorf("error creating verification confirmation request: %w", err)
 	}
 
 	var res *confirmationResponse

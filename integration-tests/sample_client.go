@@ -1,18 +1,15 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"net"
 	"net/http"
 )
-
-var errInvalidLogin = errors.New("invalid login")
 
 type sampleClient struct {
 	cookies    []*http.Cookie
 	url        string
 	httpClient *http.Client
-	sessionURL string
 }
 
 func newSampleClient(url string, httpClient *http.Client) *sampleClient {
@@ -23,7 +20,7 @@ func newSampleClient(url string, httpClient *http.Client) *sampleClient {
 }
 
 func (s *sampleClient) ping() error {
-	req, err := http.NewRequest("HEAD", s.url, nil)
+	req, err := http.NewRequest("HEAD", s.url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -40,7 +37,7 @@ func (s *sampleClient) ping() error {
 
 func (s *sampleClient) restart(restarterHost, restarterPort, sampleName string) error {
 	restartSampleReq, err := newRequest(
-		fmt.Sprintf("http://%s:%s/restart?name=%s", restarterHost, restarterPort, sampleName),
+		fmt.Sprintf("http://%s/restart?name=%s", net.JoinHostPort(restarterHost, restarterPort), sampleName),
 		"POST",
 		http.NoBody)
 	if err != nil {

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,11 +12,14 @@ import (
 	"code.miracl.com/mfa/pkg/gomiracl/wrap"
 )
 
+var errAuthenticate = errors.New("error making the authenticate request")
+
 func authenticate(httpClient *http.Client, identity identity, pin int, code string) error {
 	// Get pass1 proof from the token and pin (this is the U param in /pass1).
 	rand := bindings.NewRand([]byte{})
 	X := make([]byte, 32)
 	proof := make([]byte, 65)
+
 	xR, S, U, _, err := wrap.Client1BN254CX(int(gomiracl.SHA256), 0, identity.MPinID, rand, X, pin, identity.Token, proof)
 	if err != nil {
 		return fmt.Errorf("error getting client 1: %w", err)
@@ -46,7 +50,7 @@ func authenticate(httpClient *http.Client, identity identity, pin int, code stri
 	}
 
 	if authResponse.Status != http.StatusOK {
-		return fmt.Errorf("error making the authenticate request, status: %v", authResponse.Status)
+		return fmt.Errorf("%w, status: %v", errAuthenticate, authResponse.Status)
 	}
 
 	return nil
@@ -71,26 +75,25 @@ func pass1Request(httpClient *http.Client, identity identity, proof []byte, scop
 		"POST",
 		payload,
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err = json.Unmarshal(resp, &p1Response); err != nil {
+	if err := json.Unmarshal(resp, &p1Response); err != nil {
 		return nil, err
 	}
 
 	return p1Response, nil
 }
 
-func pass2Request(httpClient *http.Client, identity identity, proof []byte, WID string) (p2Response *pass2Response, err error) {
+func pass2Request(httpClient *http.Client, identity identity, proof []byte, wid string) (p2Response *pass2Response, err error) {
 	payload := struct {
 		V      string `json:"V"`
 		WID    string `json:"WID"`
 		MPinID string `json:"mpin_id"`
 	}{
 		hex.EncodeToString(proof),
-		WID,
+		wid,
 		hex.EncodeToString(identity.MPinID),
 	}
 
@@ -100,12 +103,11 @@ func pass2Request(httpClient *http.Client, identity identity, proof []byte, WID 
 		"POST",
 		payload,
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err = json.Unmarshal(resp, &p2Response); err != nil {
+	if err := json.Unmarshal(resp, &p2Response); err != nil {
 		return nil, err
 	}
 
@@ -125,12 +127,11 @@ func authenticateRequest(httpClient *http.Client, authOTT string) (authResponse 
 		"POST",
 		payload,
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if err = json.Unmarshal(resp, &authResponse); err != nil {
+	if err := json.Unmarshal(resp, &authResponse); err != nil {
 		return nil, err
 	}
 
@@ -154,7 +155,7 @@ func accessRequest(httpClient *http.Client, webOTT string) (accessResponse *acce
 		return nil, err
 	}
 
-	if err = json.Unmarshal(resp, &accessResponse); err != nil {
+	if err := json.Unmarshal(resp, &accessResponse); err != nil {
 		return nil, err
 	}
 

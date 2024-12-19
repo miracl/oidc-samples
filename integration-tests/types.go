@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // Generic types
 
 type identity struct {
@@ -12,24 +10,6 @@ type identity struct {
 
 type header struct {
 	Key, Value string
-}
-
-type userInfo struct {
-	Email string `json:"email"`
-}
-
-type cryptoError struct {
-	exitCode int
-}
-
-func newCryptoError(exitCode int) cryptoError {
-	return cryptoError{
-		exitCode: exitCode,
-	}
-}
-
-func (err cryptoError) error() string {
-	return fmt.Sprintf("Crypto error exited with code %v", err.exitCode)
 }
 
 // Registration responses
@@ -74,12 +54,6 @@ type signatureResponse struct {
 	CS2URL            string `json:"cs2url"`
 	Curve             string `json:"curve"`
 	DTAs              string `json:"dtas"`
-}
-
-type authorizeResponse struct {
-	AccessURL string `json:"accessURL"`
-	QRURL     string `json:"qrURL"`
-	WebOTT    string `json:"webOTT"`
 }
 
 type clientSecretResponse struct {
