@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	mathRand "math/rand"
 	"net/http"
@@ -52,6 +53,10 @@ func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byt
 		}
 
 		return []byte(redirectLocation.String()), resp.Cookies(), nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("unsuccessful request (%s) to %s", strconv.Itoa(resp.StatusCode), req.URL.String())
 	}
 
 	responseBody, err = ioutil.ReadAll(resp.Body)

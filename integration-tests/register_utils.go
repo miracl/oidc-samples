@@ -125,7 +125,6 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID s
 
 	resp, err := makeRequest(
 		httpClient,
-		// options.apiURL+"/activate/initiate",
 		options.apiURL+"/verification",
 		"POST",
 		payload,
@@ -136,6 +135,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID s
 	}
 
 	var verificationResponse *verificationURLResponse
+
 	if err := json.Unmarshal(resp, &verificationResponse); err != nil {
 		return "", err
 	}
@@ -214,6 +214,7 @@ func clientSecretRequest(httpClient *http.Client, cs2url string) (*clientSecretR
 	}
 
 	var csResponse *clientSecretResponse
+
 	if err := json.Unmarshal(resp, &csResponse); err != nil {
 		return nil, err
 	}
