@@ -1,6 +1,5 @@
 FROM ghcr.io/miracl/oidc-samples/proxy:latest as proxy
 
-
 FROM golang:alpine as builder
 WORKDIR /src
 COPY . .
