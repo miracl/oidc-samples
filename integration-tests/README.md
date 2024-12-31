@@ -7,6 +7,22 @@ implementation with popular client side implementations.
 
 The integration test defines some flags. Use the following command to see them.
 
+### Setup
+
+The integration tests can be run directly with Go or with a Docker container.
+
+To start an OIDC integration, you must create an OIDC application in the
+[MIRACL Trust Portal](https://trust.miracl.com) as described [here](https://miracl.com/resources/docs/get-started/low-code/).
+The `Redirect URL` must be the same as the one the testing sample is run with.
+If you use the sample's default value, it must be set to `http://localhost:8000/login`.
+You must pass the app's credentials to the tests through environment
+variables as follows:
+
+``` bash
+export CLIENT_ID=<client-id>
+export CLIENT_SECRET=<client-secret>
+```
+
 ### Run
 
 ```bash
