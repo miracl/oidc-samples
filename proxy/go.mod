@@ -1,7 +1,6 @@
 module github.com/miracl/oidc-samples/proxy
 
-go 1.22
-toolchain go1.24.1
+go 1.24
 
 require github.com/elazarl/goproxy v1.2.1
 
