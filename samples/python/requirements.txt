@@ -16,7 +16,7 @@ idna==3.10
 idpyoidc==5.0.0
 isort==5.13.2
 itsdangerous==2.2.0
-Jinja2==3.1.5
+Jinja2==3.1.6
 MarkupSafe==3.0.2
 mccabe==0.7.0
 mypy-extensions==1.0.0
