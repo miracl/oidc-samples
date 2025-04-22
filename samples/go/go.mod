@@ -1,6 +1,6 @@
 module github.com/miracl/oidc-samples/samples/go
 
-go 1.21
+go 1.24
 
 require (
 	github.com/coreos/go-oidc/v3 v3.11.0
