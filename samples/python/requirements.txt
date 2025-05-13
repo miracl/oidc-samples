@@ -11,7 +11,7 @@ cryptojwt==1.9.3
 dill==0.3.9
 docopt==0.6.2
 filelock==3.16.1
-Flask==3.1.0
+Flask==3.1.1
 idna==3.10
 idpyoidc==5.0.0
 isort==5.13.2
