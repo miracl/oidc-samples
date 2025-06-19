@@ -32,5 +32,5 @@ requests==2.32.3
 responses==0.25.3
 terminaltables==3.1.10
 tomlkit==0.13.2
-urllib3==2.2.3
+urllib3==2.5.0
 Werkzeug==3.1.3
