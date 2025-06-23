@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.miracl.com/mfa/pkg/gomiracl"
-	"code.miracl.com/mfa/pkg/gomiracl/bindings"
-	"code.miracl.com/mfa/pkg/gomiracl/wrap"
+	"code.miracl.com/maas/maas/src/lib/gomiracl"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/bindings"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/wrap"
 )
 
 var errAuthenticate = errors.New("error making the authenticate request")

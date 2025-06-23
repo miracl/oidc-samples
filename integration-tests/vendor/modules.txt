@@ -1,8 +1,8 @@
-# code.miracl.com/mfa/pkg/gomiracl v1.0.1
-## explicit; go 1.17
-code.miracl.com/mfa/pkg/gomiracl
-code.miracl.com/mfa/pkg/gomiracl/bindings
-code.miracl.com/mfa/pkg/gomiracl/wrap
+# code.miracl.com/maas/maas/src/lib/gomiracl v1.0.1
+## explicit; go 1.24
+code.miracl.com/maas/maas/src/lib/gomiracl
+code.miracl.com/maas/maas/src/lib/gomiracl/bindings
+code.miracl.com/maas/maas/src/lib/gomiracl/wrap
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid

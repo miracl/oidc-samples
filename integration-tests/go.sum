@@ -1,4 +1,4 @@
-code.miracl.com/mfa/pkg/gomiracl v1.0.1 h1:z98ILbTS8jRaw6ix2R8siiTRvSkdse3L2xreIaQKjro=
-code.miracl.com/mfa/pkg/gomiracl v1.0.1/go.mod h1:5sgJnsIKi6RTb/Q7eT9HmG5Vp3rNwuzXjsRZYVcCwxo=
+code.miracl.com/maas/maas/src/lib/gomiracl v1.0.1 h1:I5J5BPwtJnD9ojN/izOwmrS35r566CUVZ3rJtnXGu0U=
+code.miracl.com/maas/maas/src/lib/gomiracl v1.0.1/go.mod h1:MgUq678ZxmLFc3NZ+yRUTsWqz0/wRpiw+SRVZLVVp50=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"code.miracl.com/mfa/pkg/gomiracl"
-	"code.miracl.com/mfa/pkg/gomiracl/wrap"
+	"code.miracl.com/maas/maas/src/lib/gomiracl"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/wrap"
 )
 
 func createSession(httpClient *http.Client, userID string) (*sessionResponse, error) {
