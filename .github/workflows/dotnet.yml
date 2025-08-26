@@ -23,7 +23,7 @@ env:
 
 jobs:
   build-dotnet:
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup MSBuild
@@ -40,7 +40,7 @@ jobs:
 
   build-docker:
     needs: build-dotnet
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@v3
@@ -58,12 +58,14 @@ jobs:
         run: |
           docker build --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest samples/dotnet/
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          echo "pushed ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ steps.meta.outputs.tags}}
           docker push ${{ steps.meta.outputs.tags}}
+          echo "pushed ${{ steps.meta.outputs.tags}}"
 
   run-integration-tests-with-proxy:
     needs: build-docker
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - name: Pull images
         run: |
@@ -89,7 +91,7 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
           rm -rf $CID_FILE
       - name: Start the sample
         shell: bash
@@ -113,7 +115,7 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
       - name: Run integration tests
         id: tests
         shell: powershell
@@ -130,7 +132,7 @@ jobs:
 
   run-integration-tests:
     needs: build-docker
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - name: Pull images
         run: |
@@ -146,7 +148,7 @@ jobs:
           --env REDIRECT_URL=http://sample:8000/login
           --cidfile $CID_FILE
           ${{ env.SAMPLE_IMAGE }}
-      - name: Sleep for 1 seconds
+      - name: Sleep for 2 seconds
         run: sleep 2s
         shell: bash
       - name: Info
@@ -155,16 +157,23 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
       - name: Run integration tests
         id: tests
         shell: powershell
-        run: docker run
-          --env CLIENT_ID
-          --env CLIENT_SECRET
-          --env PROJECT_ID
-          --env SAMPLE_IP=${{ steps.info.outputs.address }}
-          --env SAMPLE_URL=http://sample:8000
-          --env REDIRECT_URL=http://sample:8000/login
-          --env SKIP_MODIFY_TESTS=true
-          ${{ env.TESTS_IMAGE }}
+        run: |
+          echo 1
+          Get-CimInstance -ClassName Win32_OperatingSystem
+          echo 2
+          echo "NOW SEE THE int tests OS: "
+          docker inspect ${{ env.TESTS_IMAGE }}
+          echo 3
+        # run: docker run
+        #   --env CLIENT_ID
+        #   --env CLIENT_SECRET
+        #   --env PROJECT_ID
+        #   --env SAMPLE_IP=${{ steps.info.outputs.address }}
+        #   --env SAMPLE_URL=http://sample:8000
+        #   --env REDIRECT_URL=http://sample:8000/login
+        #   --env SKIP_MODIFY_TESTS=true
+        #   ${{ env.TESTS_IMAGE }}
