@@ -23,7 +23,7 @@ env:
 
 jobs:
   build-dotnet:
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup MSBuild
@@ -40,7 +40,7 @@ jobs:
 
   build-docker:
     needs: build-dotnet
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@v3
@@ -63,7 +63,7 @@ jobs:
 
   run-integration-tests-with-proxy:
     needs: build-docker
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - name: Pull images
         run: |
@@ -89,7 +89,7 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
           rm -rf $CID_FILE
       - name: Start the sample
         shell: bash
@@ -113,7 +113,7 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
       - name: Run integration tests
         id: tests
         shell: powershell
@@ -130,7 +130,7 @@ jobs:
 
   run-integration-tests:
     needs: build-docker
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - name: Pull images
         run: |
@@ -146,7 +146,7 @@ jobs:
           --env REDIRECT_URL=http://sample:8000/login
           --cidfile $CID_FILE
           ${{ env.SAMPLE_IMAGE }}
-      - name: Sleep for 1 seconds
+      - name: Sleep for 2 seconds
         run: sleep 2s
         shell: bash
       - name: Info
@@ -155,7 +155,7 @@ jobs:
         run: |
           export CID=$(cat $CID_FILE)
           export ADDR=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CID)
-          echo "::set-output name=address::$ADDR"
+          echo "address=$ADDR" >> $GITHUB_OUTPUT
       - name: Run integration tests
         id: tests
         shell: powershell
