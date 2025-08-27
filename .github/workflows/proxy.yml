@@ -51,7 +51,7 @@ jobs:
 
   build-docker-windows:
     needs: lint-go
-    runs-on: windows-2019
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@v3
