@@ -17,12 +17,14 @@ All samples work with the following environment variables:
 
 - `HOST` - Host to listen on. The default is "localhost".
 - `PORT` - Port of the listening host. The default is "8000".
-- `ISSUER` - OpenID Connect Issuer. The default is "https://api.mpin.io".
-- `REDIRECT_URL` - The redirect URL of the app in the MIRACL Trust platform.
+- `ISSUER` - OpenID Connect Issuer. This must correspond to the OIDC Issuer
+  configured for your project in the [MIRACL Trust Portal](https://trust.miracl.cloud).
+  It has no default value and is mandatory.
+- `REDIRECT_URL` - The redirect URL of the application in the MIRACL Trust platform.
   The default value is "http://localhost:8000/login".
-- `CLIENT_ID` - The Client ID of the app in the MIRACL Trust platform. It has
-  no default value and is mandatory.
-- `CLIENT_SECRET`- The Client Secret of the app in the MIRACL Trust platform.
+- `CLIENT_ID` - The Client ID of the application in the MIRACL Trust platform.
+  It has no default value and is mandatory.
+- `CLIENT_SECRET`- The Client Secret of the application in the MIRACL Trust platform.
   It has no default value and is mandatory.
 - `PROXY_HOST`- The host address of the proxy behind which you run the sample.
   The default value is an empty string. It is used only when the setup requires
@@ -32,8 +34,8 @@ All samples work with the following environment variables:
   proxy, allowing us to validate that the OIDC client works behind a proxy.
 
 To get those values, you'll need to [register](https://miracl.com/resources/docs/get-started/register/)
-and [create an app](https://miracl.com/resources/docs/get-started/low-code/) in
-our platform.
+and [create an application](https://miracl.com/resources/docs/get-started/low-code/)
+in our platform.
 
 ## Usage
 
@@ -55,6 +57,7 @@ docker run \
   --publish 8000:8000 \
   --env CLIENT_ID=<client-id> \
   --env CLIENT_SECRET=<client-secret> \
+  --env ISSUER=<oidc-issuer> \
   sample
 ```
 
@@ -69,6 +72,7 @@ docker run \
   --publish <custom-port>:8000 \
   --env CLIENT_ID=<client-id> \
   --env CLIENT_SECRET=<client-secret> \
+  --env ISSUER=<oidc-issuer> \
   --env REDIRECT_URL=http://localhost:<custom_port>/login \
   sample
 ```
@@ -103,6 +107,7 @@ docker run \
   --env PROXY_PORT=8080 \
   --env CLIENT_ID=<client-id> \
   --env CLIENT_SECRET=<client-secret> \
+  --env ISSUER=<oidc-issuer> \
   sample
 ```
 

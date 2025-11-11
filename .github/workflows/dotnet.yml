@@ -18,7 +18,7 @@ env:
   TESTS_IMAGE: ghcr.io/miracl/oidc-samples/integration-tests:latest-windows
   CLIENT_ID: ${{ vars.CLIENT_ID }}
   CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  PROJECT_DOMAIN: ${{ vars.PROJECT_DOMAIN }}
   CID_FILE: sample.cid
 
 jobs:
@@ -99,6 +99,7 @@ jobs:
           --name sample
           --env CLIENT_ID
           --env CLIENT_SECRET
+          --env ISSUER=$PROJECT_DOMAIN
           --env REDIRECT_URL=http://sample:8000/login
           --env PROXY_HOST=${{ steps.proxy.outputs.address }}
           --env PROXY_PORT=8080
@@ -120,7 +121,7 @@ jobs:
         run: docker run
           --env CLIENT_ID
           --env CLIENT_SECRET
-          --env PROJECT_ID
+          --env PROJECT_DOMAIN
           --env SAMPLE_NAME=sample
           --env SAMPLE_IP=${{ steps.sample.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
@@ -143,6 +144,7 @@ jobs:
           --publish 8000:8000
           --env CLIENT_ID
           --env CLIENT_SECRET
+          --env ISSUER=$PROJECT_DOMAIN
           --env REDIRECT_URL=http://sample:8000/login
           --cidfile $CID_FILE
           ${{ env.SAMPLE_IMAGE }}
@@ -162,7 +164,7 @@ jobs:
         run: docker run
           --env CLIENT_ID
           --env CLIENT_SECRET
-          --env PROJECT_ID
+          --env PROJECT_DOMAIN
           --env SAMPLE_IP=${{ steps.info.outputs.address }}
           --env SAMPLE_URL=http://sample:8000
           --env REDIRECT_URL=http://sample:8000/login

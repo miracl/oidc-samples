@@ -23,7 +23,8 @@ To run the sample, do the following:
 cd samples/go
 go run . \
     -client-id <client-id> \
-    -client-secret <client-secret>
+    -client-secret <client-secret> \
+    -issuer <oidc-issuer>
 ```
 
 This starts the sample HTTP server. When you access http://localhost:8000/, you

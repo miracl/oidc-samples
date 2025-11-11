@@ -20,7 +20,7 @@ def new_app():
     application = Flask(__name__)
     client_configs = {
         "miracl": {
-            "issuer": "https://api.mpin.io/",
+            "issuer": os.environ.get("ISSUER"),
             "client_id": os.environ.get("CLIENT_ID"),
             "client_secret": os.environ.get("CLIENT_SECRET"),
             "client_type": "oidc",

@@ -24,6 +24,7 @@ as follows:
     <add key="REDIRECT_URL" value="http://localhost:59504/login" />
     <add key="CLIENT_ID" value="CLIENT_ID" />
     <add key="CLIENT_SECRET" value="CLIENT_SECRET" />
+    <add key="ISSUER" value="OIDC_ISSUER" />
   </appSettings>
 ```
 
