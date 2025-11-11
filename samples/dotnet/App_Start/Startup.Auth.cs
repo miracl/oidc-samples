@@ -68,7 +68,7 @@ namespace dotnet
             HttpClient client = new HttpClient();
             var response = await client.RequestAuthorizationCodeTokenAsync(new AuthorizationCodeTokenRequest
             {
-                Address = "https://api.mpin.io/oidc/token",
+                Address = OidcAuthority + "/oidc/token",
 
                 ClientId = c.TokenEndpointRequest.ClientId,
                 ClientSecret = c.TokenEndpointRequest.ClientSecret,

@@ -18,8 +18,6 @@ namespace OidcSample
 {
     public class Startup
     {
-        private const string MiraclIssuer = "https://api.mpin.io";
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -69,7 +67,7 @@ namespace OidcSample
                 options.NonceCookie.SameSite = SameSiteMode.Lax;
                 options.CorrelationCookie.SameSite = SameSiteMode.Lax;
 
-                options.Authority = this.Configuration["ISSUER"] ?? MiraclIssuer;
+                options.Authority = this.Configuration["ISSUER"];
                 options.ClientId = this.Configuration["CLIENT_ID"];
                 options.ClientSecret = this.Configuration["CLIENT_SECRET"];
 
@@ -94,7 +92,7 @@ namespace OidcSample
                         var client = clientHandler != null ? new HttpClient(clientHandler) : new HttpClient();
                         var response = await client.RequestAuthorizationCodeTokenAsync(new AuthorizationCodeTokenRequest
                         {
-                            Address = MiraclIssuer + "/oidc/token",
+                            Address = options.Authority + "/oidc/token",
 
                             ClientId = c.TokenEndpointRequest.ClientId,
                             ClientSecret = c.TokenEndpointRequest.ClientSecret,

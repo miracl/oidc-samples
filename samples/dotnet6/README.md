@@ -19,6 +19,7 @@ variables as follows:
 ``` bash
 export CLIENT_ID=<client-id>
 export CLIENT_SECRET=<client-secret>
+export ISSUER=<oidc-issuer>
 ```
 
 # Usage

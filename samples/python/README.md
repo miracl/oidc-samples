@@ -28,7 +28,8 @@ python3 -m pip install -r requirements.txt
 
 python app.py \
     --client-id <client-id> \
-    --client-secret <client-secret>
+    --client-secret <client-secret> \
+    --issuer <oidc-issuer>
 ```
 
 This starts the sample HTTP server. When you access http://localhost:8000/, you
