@@ -23,7 +23,12 @@ func TestAuth(t *testing.T) {
 		},
 	}
 
-	sessionResponse, err := createSession(httpClient, userID)
+	projectID, err := getProjectID(httpClient)
+	if err != nil {
+		t.Fatalf("failed to get project configuration: %v", err.Error())
+	}
+
+	sessionResponse, err := createSession(httpClient, projectID, userID)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err.Error())
 	}
@@ -35,7 +40,7 @@ func TestAuth(t *testing.T) {
 
 	accessID := qrURL.Fragment
 
-	identity, err := register(httpClient, userID, deviceName, pin, accessID)
+	identity, err := register(httpClient, projectID, userID, deviceName, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
@@ -70,6 +75,11 @@ func TestValidateSignature(t *testing.T) {
 		},
 	}
 
+	projectID, err := getProjectID(httpClient)
+	if err != nil {
+		t.Fatalf("failed to get project configuration: %v", err.Error())
+	}
+
 	client := newSampleClient(options.sampleURL, httpClient)
 	client.restart(options.restarterHost, options.restarterPort, options.sampleName)
 
@@ -83,7 +93,7 @@ func TestValidateSignature(t *testing.T) {
 	deviceName := "The device of " + name
 	pin := randPIN()
 
-	sessionResponse, err := createSession(httpClient, userID)
+	sessionResponse, err := createSession(httpClient, projectID, userID)
 	if err != nil {
 		t.Fatalf("failed to create session: %v", err.Error())
 	}
@@ -95,7 +105,7 @@ func TestValidateSignature(t *testing.T) {
 
 	accessID := qrURL.Fragment
 
-	identity, err := register(httpClient, userID, deviceName, pin, accessID)
+	identity, err := register(httpClient, projectID, userID, deviceName, pin, accessID)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
@@ -126,7 +136,7 @@ func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	const jwksURI = "https://api.mpin.io:443/oidc/certs"
+	var jwksURI = options.projectDomain + "/oidc/certs"
 
 	originalRequestURL := r.Header.Get("X-Forwarded-Host")
 	if originalRequestURL == jwksURI {
