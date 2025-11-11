@@ -12,18 +12,18 @@ import (
 	"code.miracl.com/maas/maas/src/lib/gomiracl/wrap"
 )
 
-func createSession(httpClient *http.Client, userID string) (*sessionResponse, error) {
+func createSession(httpClient *http.Client, projectID, userID string) (*sessionResponse, error) {
 	sessionRequest := &struct {
 		ProjectID string `json:"projectId"`
 		UserID    string `json:"userId"`
 	}{
-		options.projectID,
+		projectID,
 		userID,
 	}
 
 	sessionResp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/session",
+		options.projectDomain+"/rps/v2/session",
 		http.MethodPost,
 		sessionRequest,
 		header{Key: "Content-Type", Value: "application/json"})
@@ -40,9 +40,9 @@ func createSession(httpClient *http.Client, userID string) (*sessionResponse, er
 	return createSessionResponse, nil
 }
 
-func register(httpClient *http.Client, userID, deviceName string, pin int, accessID string) (i identity, err error) {
+func register(httpClient *http.Client, projectID, userID, deviceName string, pin int, accessID string) (i identity, err error) {
 	// Call to /verification endpoint.
-	verifyURL, err := verificationRequest(httpClient, userID, deviceName, accessID)
+	verifyURL, err := verificationRequest(httpClient, userID, deviceName, accessID, projectID)
 	if err != nil {
 		return identity{}, err
 	}
@@ -63,6 +63,28 @@ func register(httpClient *http.Client, userID, deviceName string, pin int, acces
 	}
 
 	return id, nil
+}
+
+func getProjectID(httpClient *http.Client) (projectID string, err error) {
+	resp, err := makeRequest(
+		httpClient,
+		options.projectDomain+"/.well-known/project-configuration",
+		"GET",
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	var projectResponse *struct {
+		ID string `json:"id"`
+	}
+
+	if err := json.Unmarshal(resp, &projectResponse); err != nil {
+		return "", err
+	}
+
+	return projectResponse.ID, nil
 }
 
 func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activationToken string, pin int) (i identity, err error) {
@@ -103,7 +125,7 @@ func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activati
 	}, nil
 }
 
-func verificationRequest(httpClient *http.Client, userID, deviceName, accessID string) (string, error) {
+func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, projectID string) (string, error) {
 	clientIDAndSecret := options.clientID + ":" + options.clientSecret
 	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIDAndSecret))
 
@@ -115,7 +137,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID s
 		Delivery      string `json:"delivery"`
 		Authorization string `json:"-"`
 	}{
-		options.projectID,
+		projectID,
 		userID,
 		deviceName,
 		accessID,
@@ -125,7 +147,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID s
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/verification",
+		options.projectDomain+"/verification",
 		"POST",
 		payload,
 		header{Key: "Authorization", Value: authHeaderValue},
@@ -158,7 +180,7 @@ func registerRequest(httpClient *http.Client, userID, deviceName, accessID, acti
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/user",
+		options.projectDomain+"/rps/v2/user",
 		"PUT",
 		payload,
 		header{Key: "X-MIRACL-CID", Value: "mcl"},
@@ -180,7 +202,7 @@ var errInvalidSignatureResponse = errors.New("invalid signature response")
 func signatureRequest(httpClient *http.Client, mpinID, regOTT string) (*signatureResponse, error) {
 	resp, err := makeRequest(
 		httpClient,
-		fmt.Sprintf(options.apiURL+"/rps/v2/signature/%v?regOTT=%v", mpinID, regOTT),
+		fmt.Sprintf(options.projectDomain+"/rps/v2/signature/%v?regOTT=%v", mpinID, regOTT),
 		"GET",
 		nil,
 	)
@@ -239,7 +261,7 @@ func verificationConfirmation(httpClient *http.Client, userID, code string) (str
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/verification/confirmation",
+		options.projectDomain+"/verification/confirmation",
 		"POST",
 		payload,
 	)

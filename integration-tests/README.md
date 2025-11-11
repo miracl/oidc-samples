@@ -10,12 +10,13 @@ The integration test defines some flags. Use the following command to see them.
 ### Setup
 
 The integration tests can be run directly with Go or with a Docker container.
-You must pass the app's credentials to the tests through environment
-variables as follows:
+You must pass your [MIRACL Trust Portal](https://trust.miracl.cloud) application's
+credentials to the tests through environment variables as follows:
 
 ``` bash
 export CLIENT_ID=<client-id>
 export CLIENT_SECRET=<client-secret>
+export PROJECT_DOMAIN=<project_domain>
 ```
 
 ### Run
@@ -23,7 +24,8 @@ export CLIENT_SECRET=<client-secret>
 ```bash
 go test . \
   -client-id $CLIENT_ID \
-  -client-secret $CLIENT_SECRET
+  -client-secret $CLIENT_SECRET \
+  -project-domain $PROJECT_DOMAIN
 ```
 
 ### Build and run the test binary
@@ -32,7 +34,8 @@ go test . \
 go test -mod=vendor -c -o integration-tests .
 ./integration-tests \
   -client-id $CLIENT_ID \
-  -client-secret $CLIENT_SECRET
+  -client-secret $CLIENT_SECRET \
+  -project-domain $PROJECT_DOMAIN
 ```
 
 ### See flags
@@ -48,5 +51,6 @@ docker run \
   --network host \
   ghcr.io/miracl/oidc-samples/integration-tests:latest \
     --client-id $CLIENT_ID \
-    --client-secret $CLIENT_SECRET
+    --client-secret $CLIENT_SECRET \
+    --project-domain $PROJECT_DOMAIN
 ```

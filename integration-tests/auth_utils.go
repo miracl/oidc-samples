@@ -71,7 +71,7 @@ func pass1Request(httpClient *http.Client, identity identity, proof []byte, scop
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/pass1",
+		options.projectDomain+"/rps/v2/pass1",
 		"POST",
 		payload,
 	)
@@ -99,7 +99,7 @@ func pass2Request(httpClient *http.Client, identity identity, proof []byte, wid 
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/pass2",
+		options.projectDomain+"/rps/v2/pass2",
 		"POST",
 		payload,
 	)
@@ -123,7 +123,7 @@ func authenticateRequest(httpClient *http.Client, authOTT string) (authResponse 
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/authenticate",
+		options.projectDomain+"/rps/v2/authenticate",
 		"POST",
 		payload,
 	)
@@ -147,7 +147,7 @@ func accessRequest(httpClient *http.Client, webOTT string) (accessResponse *acce
 
 	resp, err := makeRequest(
 		httpClient,
-		options.apiURL+"/rps/v2/access",
+		options.projectDomain+"/rps/v2/access",
 		"POST",
 		payload,
 	)

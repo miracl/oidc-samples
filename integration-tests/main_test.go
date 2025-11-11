@@ -10,9 +10,8 @@ import (
 var options struct {
 	clientID        string
 	clientSecret    string
-	projectID       string
 	redirectURL     string
-	apiURL          string
+	projectDomain   string
 	sampleURL       string
 	proxyHost       string
 	proxyPort       string
@@ -23,11 +22,10 @@ var options struct {
 }
 
 func TestMain(m *testing.M) {
-	flag.StringVar(&options.clientID, "client-id", "", "the client id for the portal app")
-	flag.StringVar(&options.clientSecret, "client-secret", "", "the client secret for the portal app")
-	flag.StringVar(&options.projectID, "project-id", "", "the project id for the portal app")
-	flag.StringVar(&options.redirectURL, "redirect-url", "http://localhost:8000/login", "the redirect url from the portal app")
-	flag.StringVar(&options.apiURL, "api-url", "https://api.mpin.io", "the mpin api URL")
+	flag.StringVar(&options.clientID, "client-id", "", "the client id of your MIRACL Trust Portal application")
+	flag.StringVar(&options.clientSecret, "client-secret", "", "the client secret of your MIRACL Trust Portal application")
+	flag.StringVar(&options.redirectURL, "redirect-url", "http://localhost:8000/login", "the redirect url of your MIRACL Trust Portal application")
+	flag.StringVar(&options.projectDomain, "project-domain", "", "the project domain of your MIRACL Trust Portal application")
 	flag.StringVar(&options.sampleURL, "sample-url", "http://127.0.0.1:8000", "the sample URL")
 	flag.StringVar(&options.proxyHost, "proxy-host", "", "Sample's proxy HOST")
 	flag.StringVar(&options.proxyPort, "proxy-port", "", "Sample's proxy PORT")
@@ -37,6 +35,10 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&options.skipModifyTests, "skip-modify-tests", true, "Specify if the tests which modify requests to be skipped")
 
 	flag.Parse()
+
+	if options.projectDomain == "" {
+		fmt.Println("ERROR: project-domain is missing.\nUse -h flag to see all args.")
+	}
 
 	if options.clientSecret == "" && options.clientID == "" {
 		fmt.Println("ERROR: client-id and client-secret args are missing.\nUse -h flag to see all args.")
