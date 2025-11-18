@@ -24,7 +24,7 @@ func main() {
 func restartSignature(w http.ResponseWriter, r *http.Request) {
 	containerName := r.URL.Query().Get("name")
 	if containerName == "" {
-		http.Error(w, "required query param 'name' missed", http.StatusPreconditionRequired)
+		http.Error(w, "missing required query param: 'name'", http.StatusPreconditionRequired)
 		return
 	}
 
