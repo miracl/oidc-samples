@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&options.restarterHost, "restarter-host", "127.0.0.1", "Restarter's HOST")
 	flag.StringVar(&options.restarterPort, "restarter-port", "8081", "Restarter's PORT")
 	flag.StringVar(&options.sampleName, "sample-name", "sample", "Sample's container name")
-	flag.BoolVar(&options.skipModifyTests, "skip-modify-tests", true, "Specify if the tests which modify requests to be skipped")
+	flag.BoolVar(&options.skipModifyTests, "skip-modify-tests", true, "Specify whether the tests that modify requests should be skipped")
 
 	flag.Parse()
 

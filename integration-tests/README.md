@@ -1,11 +1,11 @@
 # MIRACL Trust Integration Tests for OIDC Samples
 
-Integration test suit continuously testing the MIRACL Trust OpenID Connect
-implementation with popular client side implementations.
+Integration test suite that continuously tests the MIRACL Trust OpenID Connect
+implementation with popular client-side implementations.
 
 ## Getting started
 
-The integration test defines some flags. Use the following command to see them.
+The integration test defines several flags. To see them, use the command below.
 
 ### Setup
 
