@@ -26,7 +26,7 @@ pip-upgrader==1.4.15
 platformdirs==4.3.6
 pycparser==2.22
 pylint==3.3.2
-pyOpenSSL==25.3.0
+pyOpenSSL==26.0.0
 PyYAML==6.0.2
 requests==2.32.4
 responses==0.25.3
