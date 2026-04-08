@@ -6,7 +6,7 @@ cffi==2.0.0
 charset-normalizer==3.4.0
 click==8.1.7
 colorclass==2.2.2
-cryptography==46.0.5
+cryptography==46.0.7
 cryptojwt==1.10.0
 dill==0.3.9
 docopt==0.6.2
