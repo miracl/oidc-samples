@@ -33,5 +33,5 @@ responses==0.25.3
 terminaltables==3.1.10
 tomlkit==0.13.2
 typing_extensions==4.15.0
-urllib3==2.6.3
+urllib3==2.7.0
 Werkzeug==3.1.6
