@@ -1,6 +1,7 @@
 """
 This example integrates the IdPyOIDC library with the MIRACL Trust platform.
 """
+
 import os
 import random
 from urllib.parse import parse_qs
@@ -54,9 +55,7 @@ def index():
     """
     Makes the request to the authorization endpoint, returns the user info if session id is found.
     """
-    res = rph.init_authorization(
-        client=client, req_args={"scope": ["openid", "email"]}
-    )
+    res = rph.init_authorization(client=client, req_args={"scope": ["openid", "email"]})
     session_id = request.args.get("session")
     if session_id is None:
         return redirect(res)
