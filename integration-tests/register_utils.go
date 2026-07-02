@@ -2,14 +2,15 @@ package main
 
 import (
 	b64 "encoding/base64"
+	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"code.miracl.com/maas/maas/src/lib/gomiracl"
-	"code.miracl.com/maas/maas/src/lib/gomiracl/wrap"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/curve"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/mpin"
 )
 
 func createSession(httpClient *http.Client, projectID, userID string) (*sessionResponse, error) {
@@ -40,26 +41,27 @@ func createSession(httpClient *http.Client, projectID, userID string) (*sessionR
 	return createSessionResponse, nil
 }
 
-func register(httpClient *http.Client, projectID, userID, deviceName string, pin int, accessID string) (i identity, err error) {
+func register(httpClient *http.Client, projectID, userID, deviceName string, pin int) (i *identity, err error) {
 	// Call to /verification endpoint.
-	verifyURL, err := verificationRequest(httpClient, userID, deviceName, accessID, projectID)
+	verifyURL, err := verificationRequest(httpClient, userID, deviceName, projectID)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
 	verificationCode, err := getVerificationCode(verifyURL)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
+	// Call to /verification/confirmation endpoint.
 	activationToken, err := verificationConfirmation(httpClient, userID, verificationCode)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
-	id, err := newIdentity(httpClient, userID, deviceName, accessID, activationToken, pin)
+	id, err := newIdentity(httpClient, userID, deviceName, activationToken, pin)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
 	return id, nil
@@ -69,7 +71,7 @@ func getProjectID(httpClient *http.Client) (projectID string, err error) {
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/.well-known/project-configuration",
-		"GET",
+		http.MethodGet,
 		nil,
 	)
 	if err != nil {
@@ -87,45 +89,39 @@ func getProjectID(httpClient *http.Client) (projectID string, err error) {
 	return projectResponse.ID, nil
 }
 
-func newIdentity(httpClient *http.Client, userID, deviceName, accessID, activationToken string, pin int) (i identity, err error) {
-	// Call to /rps/v2/user endpoint.
-	regResponse, err := registerRequest(httpClient, userID, deviceName, accessID, activationToken)
+func newIdentity(httpClient *http.Client, userID, deviceName, activationToken string, pin int) (i *identity, err error) {
+	privateKey, publicKey, err := curve.BN254CX.GetDVSKeyPair(newRand(), nil)
 	if err != nil {
-		return identity{}, err
+		return nil, fmt.Errorf("error generating key pair: %w", err)
 	}
 
-	// Call to /signature endpoint.
-	sigResponse, err := signatureRequest(httpClient, regResponse.MPinID, regResponse.RegOTT)
+	// Call to /registration endpoint.
+	regResponse, err := registrationRequest(httpClient, userID, deviceName, hex.EncodeToString(publicKey), activationToken)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
-	// Call to /dta/ID endpoint.
-	csResponse, err := clientSecretRequest(httpClient, sigResponse.CS2URL)
+	mpinID, err := hex.DecodeString(regResponse.MPinID)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
-	// Combine both client secrets.
-	Q, err := wrap.RecombineG1BN254CX(hex2bytes(sigResponse.ClientSecretShare), hex2bytes(csResponse.ClientSecret))
+	// Call to all SecretURLs to get client secrets and combine them to create a client token.
+	clientToken, err := clientTokenRequests(httpClient, regResponse.SecretURLs, mpinID, publicKey, privateKey, pin)
 	if err != nil {
-		return identity{}, err
+		return nil, err
 	}
 
-	// First extract pin from the combine client secret, in order to get the token.
-	CS, err := wrap.ExtractPINBN254CX(int(gomiracl.SHA256), hex2bytes(regResponse.MPinID), pin, Q)
-	if err != nil {
-		return identity{}, err
-	}
-
-	return identity{
-		MPinID: hex2bytes(regResponse.MPinID),
-		Token:  CS,
-		DTAs:   sigResponse.DTAs,
+	return &identity{
+		MPinID:     mpinID,
+		Token:      clientToken,
+		DTAs:       regResponse.DTAs,
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
 	}, nil
 }
 
-func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, projectID string) (string, error) {
+func verificationRequest(httpClient *http.Client, userID, deviceName, projectID string) (string, error) {
 	clientIDAndSecret := options.clientID + ":" + options.clientSecret
 	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIDAndSecret))
 
@@ -133,14 +129,12 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, 
 		ProjectID     string `json:"projectId"`
 		UserID        string `json:"userId"`
 		DeviceName    string `json:"deviceName"`
-		AccessID      string `json:"accessId"`
 		Delivery      string `json:"delivery"`
 		Authorization string `json:"-"`
 	}{
 		projectID,
 		userID,
 		deviceName,
-		accessID,
 		"no",
 		authHeaderValue,
 	}
@@ -148,7 +142,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, 
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/verification",
-		"POST",
+		http.MethodPost,
 		payload,
 		header{Key: "Authorization", Value: authHeaderValue},
 	)
@@ -156,7 +150,7 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, 
 		return "", err
 	}
 
-	var verificationResponse *verificationURLResponse
+	var verificationResponse verificationURLResponse
 
 	if err := json.Unmarshal(resp, &verificationResponse); err != nil {
 		return "", err
@@ -165,23 +159,23 @@ func verificationRequest(httpClient *http.Client, userID, deviceName, accessID, 
 	return verificationResponse.VerificationURL, nil
 }
 
-func registerRequest(httpClient *http.Client, userID, deviceName, accessID, activateCode string) (*registerResponse, error) {
-	payload := struct {
-		UserID       string `json:"userId"`
-		DeviceName   string `json:"deviceName"`
-		WID          string `json:"wid"`
-		ActivateCode string `json:"activateCode"`
+func registrationRequest(httpClient *http.Client, userID, deviceName, publicKey, activationToken string) (*registrationResponse, error) {
+	payload := &struct {
+		ActivationToken string `json:"activationToken"`
+		DeviceName      string `json:"deviceName"`
+		PublicKey       string `json:"publicKey"`
+		UserID          string `json:"userId"`
 	}{
-		DeviceName:   deviceName,
-		UserID:       userID,
-		WID:          accessID,
-		ActivateCode: activateCode,
+		ActivationToken: activationToken,
+		DeviceName:      deviceName,
+		PublicKey:       publicKey,
+		UserID:          userID,
 	}
 
 	resp, err := makeRequest(
 		httpClient,
-		options.projectDomain+"/rps/v2/user",
-		"PUT",
+		options.projectDomain+"/registration",
+		http.MethodPost,
 		payload,
 		header{Key: "X-MIRACL-CID", Value: "mcl"},
 	)
@@ -189,59 +183,62 @@ func registerRequest(httpClient *http.Client, userID, deviceName, accessID, acti
 		return nil, err
 	}
 
-	var registerResponse *registerResponse
-	if err := json.Unmarshal(resp, &registerResponse); err != nil {
+	var registrationResponse registrationResponse
+
+	if err := json.Unmarshal(resp, &registrationResponse); err != nil {
 		return nil, err
 	}
 
-	return registerResponse, nil
+	return &registrationResponse, nil
 }
 
-var errInvalidSignatureResponse = errors.New("invalid signature response")
+func clientTokenRequests(httpClient *http.Client, secretURLs []string, mpinID, publicKey, privateKey []byte, pin int) (token []byte, err error) {
+	const secretURLsNumber = 2
+	if len(secretURLs) != secretURLsNumber {
+		return nil, fmt.Errorf("client secret urls should be exactly 2; received: %v", len(secretURLs))
+	}
 
-func signatureRequest(httpClient *http.Client, mpinID, regOTT string) (*signatureResponse, error) {
-	resp, err := makeRequest(
-		httpClient,
-		fmt.Sprintf(options.projectDomain+"/rps/v2/signature/%v?regOTT=%v", mpinID, regOTT),
-		"GET",
-		nil,
+	css := make([][]byte, 0, secretURLsNumber)
+
+	for _, secretURL := range secretURLs {
+		resp, err := makeRequest(
+			httpClient,
+			secretURL,
+			http.MethodGet,
+			nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		var cssResponse clientSecretResponse
+
+		if err := json.Unmarshal(resp, &cssResponse); err != nil {
+			return nil, err
+		}
+
+		secret, err := hex.DecodeString(cssResponse.DVSClientSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		css = append(css, secret)
+	}
+
+	clientToken, err := mpin.GetDVSClientToken(
+		append(mpinID, publicKey...),
+		pin,
+		gomiracl.SHA256,
+		privateKey,
+		curve.BN254CX,
+		css[0],
+		css[1],
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	var sigResponse *signatureResponse
-
-	if err := json.Unmarshal(resp, &sigResponse); err != nil {
-		return nil, err
-	}
-
-	if !(sigResponse.CS2URL != "" && sigResponse.ClientSecretShare != "" &&
-		sigResponse.Curve != "" && sigResponse.DTAs != "") {
-		return nil, errInvalidSignatureResponse
-	}
-
-	return sigResponse, nil
-}
-
-func clientSecretRequest(httpClient *http.Client, cs2url string) (*clientSecretResponse, error) {
-	resp, err := makeRequest(
-		httpClient,
-		cs2url,
-		"GET",
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	var csResponse *clientSecretResponse
-
-	if err := json.Unmarshal(resp, &csResponse); err != nil {
-		return nil, err
-	}
-
-	return csResponse, nil
+	return clientToken.Secret(), nil
 }
 
 func getVerificationCode(verifyURL string) (string, error) {
@@ -254,7 +251,10 @@ func getVerificationCode(verifyURL string) (string, error) {
 }
 
 func verificationConfirmation(httpClient *http.Client, userID, code string) (string, error) {
-	payload := &confirmationRequest{
+	payload := &struct {
+		UserID string `json:"userId"`
+		Code   string `json:"code"`
+	}{
 		UserID: userID,
 		Code:   code,
 	}
@@ -262,14 +262,14 @@ func verificationConfirmation(httpClient *http.Client, userID, code string) (str
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/verification/confirmation",
-		"POST",
+		http.MethodPost,
 		payload,
 	)
 	if err != nil {
 		return "", fmt.Errorf("error creating verification confirmation request: %w", err)
 	}
 
-	var res *confirmationResponse
+	var res confirmationResponse
 
 	if err := json.Unmarshal(resp, &res); err != nil {
 		return "", err

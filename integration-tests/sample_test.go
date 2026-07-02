@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -40,7 +40,7 @@ func TestAuth(t *testing.T) {
 
 	accessID := qrURL.Fragment
 
-	identity, err := register(httpClient, projectID, userID, deviceName, pin, accessID)
+	identity, err := register(httpClient, projectID, userID, deviceName, pin)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestValidateSignature(t *testing.T) {
 
 	accessID := qrURL.Fragment
 
-	identity, err := register(httpClient, projectID, userID, deviceName, pin, accessID)
+	identity, err := register(httpClient, projectID, userID, deviceName, pin)
 	if err != nil {
 		t.Fatalf("Error registering: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestValidateSignature(t *testing.T) {
 }
 
 func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf("ERROR is: %#v", err.Error())))
 
@@ -136,7 +136,7 @@ func modifySignatureHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var jwksURI = options.projectDomain + "/oidc/certs"
+	jwksURI := options.projectDomain + "/oidc/certs"
 
 	originalRequestURL := r.Header.Get("X-Forwarded-Host")
 	if originalRequestURL == jwksURI {
