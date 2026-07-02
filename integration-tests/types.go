@@ -3,9 +3,16 @@ package main
 // Generic types
 
 type identity struct {
-	MPinID []byte
-	Token  []byte
-	DTAs   string
+	MPinID     []byte
+	Token      []byte
+	DTAs       string
+	PrivateKey []byte
+	PublicKey  []byte
+}
+
+// MPinID + PublicKey.
+func (id *identity) dvsMPinID() []byte {
+	return append(id.MPinID, id.PublicKey...)
 }
 
 type header struct {
@@ -24,12 +31,6 @@ type verificationURLResponse struct {
 	VerificationURL string `json:"verificationURL"`
 }
 
-type confirmationRequest struct {
-	UserID           string `json:"userId"`
-	Code             string `json:"code"`
-	ConfirmMissmatch bool   `json:"confirmMissmatch"`
-}
-
 type confirmationResponse struct {
 	ActivateToken           string `json:"actToken"`
 	AccessID                string `json:"accessId"`
@@ -39,21 +40,15 @@ type confirmationResponse struct {
 	VerificationRedirectURL string `json:"verificationRedirectUrl"`
 }
 
-type registerResponse struct {
-	Active     bool   `json:"active"`
-	AppID      string `json:"appId"`
-	CustomerID string `json:"customerId"`
-	ExpireTime int    `json:"expireTime"`
-	MPinID     string `json:"mpinId"`
-	NowTime    int    `json:"nowTime"`
-	RegOTT     string `json:"regOTT"`
-}
-
-type signatureResponse struct {
-	ClientSecretShare string `json:"clientSecretShare"`
-	CS2URL            string `json:"cs2url"`
-	Curve             string `json:"curve"`
-	DTAs              string `json:"dtas"`
+type registrationResponse struct {
+	MPinID           string   `json:"mpinId"`
+	ProjectID        string   `json:"projectId"`
+	DTAs             string   `json:"dtas"`
+	Curve            string   `json:"curve"`
+	SecretURLs       []string `json:"secretUrls"`
+	VerificationType string   `json:"verificationType"`
+	PINLength        int      `json:"pinLength"`
+	MPinIDCreatedAt  int      `json:"createdAt"`
 }
 
 type clientSecretResponse struct {

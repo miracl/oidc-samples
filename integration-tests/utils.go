@@ -2,13 +2,16 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	mathRand "math/rand"
 	"net/http"
 	"strconv"
 	"time"
+
+	amclRand "code.miracl.com/maas/maas/src/lib/gomiracl/rand"
 )
 
 func newRequest(url, method string, payload interface{}, headers ...header) (req *http.Request, err error) {
@@ -59,7 +62,7 @@ func getResponse(req *http.Request, httpClient *http.Client) (responseBody []byt
 		return nil, nil, fmt.Errorf("unsuccessful request (%s) to %s", strconv.Itoa(resp.StatusCode), req.URL.String())
 	}
 
-	responseBody, err = ioutil.ReadAll(resp.Body)
+	responseBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,20 +81,17 @@ func makeRequest(httpClient *http.Client, url, method string, payload interface{
 	return res, err
 }
 
-func hex2bytes(s string) []byte {
-	lgh := len(s)
-	data := make([]byte, lgh/2)
-
-	for i := 0; i < lgh; i += 2 {
-		a, _ := strconv.ParseInt(s[i:i+2], 16, 32)
-		data[i/2] = byte(a)
-	}
-
-	return data
-}
-
 func randPIN() int {
 	mathRand.Seed(time.Now().UnixNano())
 
 	return mathRand.Intn(9000) + 1000
+}
+
+func newRand() *amclRand.Rand {
+	r, err := amclRand.New(rand.Reader, 128)
+	if err != nil {
+		panic(err)
+	}
+
+	return r
 }

@@ -8,37 +8,40 @@ import (
 	"net/http"
 
 	"code.miracl.com/maas/maas/src/lib/gomiracl"
-	"code.miracl.com/maas/maas/src/lib/gomiracl/bindings"
-	"code.miracl.com/maas/maas/src/lib/gomiracl/wrap"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/curve"
+	"code.miracl.com/maas/maas/src/lib/gomiracl/mpin"
 )
 
 var errAuthenticate = errors.New("error making the authenticate request")
 
-func authenticate(httpClient *http.Client, identity identity, pin int, code string) error {
-	// Get pass1 proof from the token and pin (this is the U param in /pass1).
-	rand := bindings.NewRand([]byte{})
-	X := make([]byte, 32)
-	proof := make([]byte, 65)
+func authenticate(httpClient *http.Client, identity *identity, pin int, code string) error {
+	token := mpin.NewClientToken(identity.Token, curve.BN254CX)
 
-	xR, S, U, _, err := wrap.Client1BN254CX(int(gomiracl.SHA256), 0, identity.MPinID, rand, X, pin, identity.Token, proof)
+	// Client Pass 1.
+	pass1Proof, err := token.Pass1(identity.dvsMPinID(), pin, gomiracl.SHA256, newRand())
 	if err != nil {
 		return fmt.Errorf("error getting client 1: %w", err)
 	}
 
-	// Call to /rps/v2/pass1 endpoint.
-	p1Response, err := pass1Request(httpClient, identity, U, "oidc")
+	// Call to /rps/v2/pass1 endpoint for Server Pass 1.
+	p1Response, err := pass1Request(httpClient, identity.MPinID, identity.PublicKey, pass1Proof.U, pass1Proof.UT, identity.DTAs, "jwt")
 	if err != nil {
 		return fmt.Errorf("error making the pass 1 request: %w", err)
 	}
 
-	// Get V (used in /pass2) param using Y param from the pass1 response.
-	V, err := wrap.Client2BN254CX(xR, hex2bytes(p1Response.Y), S)
+	y, err := hex.DecodeString(p1Response.Y)
+	if err != nil {
+		return fmt.Errorf("error decoding pass1 response: %w", err)
+	}
+
+	// Client Pass 2.
+	pass2Proof, err := token.Pass2(pass1Proof.X, y, pass1Proof.SEC)
 	if err != nil {
 		return fmt.Errorf("error getting client 2: %w", err)
 	}
 
-	// Call to /rps/v2/pass2 endpoint.
-	p2Response, err := pass2Request(httpClient, identity, V, code)
+	// Call to /rps/v2/pass2 endpoint for Server Pass 2.
+	p2Response, err := pass2Request(httpClient, identity.MPinID, pass2Proof.V, code)
 	if err != nil {
 		return fmt.Errorf("error making the pass 2 request: %w", err)
 	}
@@ -56,23 +59,29 @@ func authenticate(httpClient *http.Client, identity identity, pin int, code stri
 	return nil
 }
 
-func pass1Request(httpClient *http.Client, identity identity, proof []byte, scope ...string) (p1Response *pass1Response, err error) {
-	payload := struct {
-		U      string   `json:"U"`
-		MPinID string   `json:"mpin_id"`
-		DTAs   string   `json:"dtas"`
-		Scope  []string `json:"scope"`
+func pass1Request(httpClient *http.Client, mpinID, pubKey, u, ut []byte, dtas string, scope ...string) (p1Response *pass1Response, err error) {
+	payload := &struct {
+		DTAs      string   `json:"dtas"`
+		MPinID    string   `json:"mpin_id"`
+		Pass      int      `json:"pass"`
+		PublicKey string   `json:"publicKey"`
+		Scope     []string `json:"scope"`
+		U         string   `json:"U"`
+		UT        string   `json:"UT"`
 	}{
-		hex.EncodeToString(proof),
-		hex.EncodeToString(identity.MPinID),
-		identity.DTAs,
-		scope,
+		DTAs:      dtas,
+		MPinID:    hex.EncodeToString(mpinID),
+		Pass:      1,
+		PublicKey: hex.EncodeToString(pubKey),
+		Scope:     scope,
+		U:         hex.EncodeToString(u),
+		UT:        hex.EncodeToString(ut),
 	}
 
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/rps/v2/pass1",
-		"POST",
+		http.MethodPost,
 		payload,
 	)
 	if err != nil {
@@ -86,21 +95,21 @@ func pass1Request(httpClient *http.Client, identity identity, proof []byte, scop
 	return p1Response, nil
 }
 
-func pass2Request(httpClient *http.Client, identity identity, proof []byte, wid string) (p2Response *pass2Response, err error) {
-	payload := struct {
+func pass2Request(httpClient *http.Client, mpinID, proof []byte, wid string) (p2Response *pass2Response, err error) {
+	payload := &struct {
+		MPinID string `json:"mpin_id"`
 		V      string `json:"V"`
 		WID    string `json:"WID"`
-		MPinID string `json:"mpin_id"`
 	}{
-		hex.EncodeToString(proof),
-		wid,
-		hex.EncodeToString(identity.MPinID),
+		MPinID: hex.EncodeToString(mpinID),
+		V:      hex.EncodeToString(proof),
+		WID:    wid,
 	}
 
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/rps/v2/pass2",
-		"POST",
+		http.MethodPost,
 		payload,
 	)
 	if err != nil {
@@ -124,7 +133,7 @@ func authenticateRequest(httpClient *http.Client, authOTT string) (authResponse 
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/rps/v2/authenticate",
-		"POST",
+		http.MethodPost,
 		payload,
 	)
 	if err != nil {
@@ -148,7 +157,7 @@ func accessRequest(httpClient *http.Client, webOTT string) (accessResponse *acce
 	resp, err := makeRequest(
 		httpClient,
 		options.projectDomain+"/rps/v2/access",
-		"POST",
+		http.MethodPost,
 		payload,
 	)
 	if err != nil {

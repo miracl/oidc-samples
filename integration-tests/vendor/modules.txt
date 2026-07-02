@@ -2,6 +2,9 @@
 ## explicit; go 1.24
 code.miracl.com/maas/maas/src/lib/gomiracl
 code.miracl.com/maas/maas/src/lib/gomiracl/bindings
+code.miracl.com/maas/maas/src/lib/gomiracl/curve
+code.miracl.com/maas/maas/src/lib/gomiracl/mpin
+code.miracl.com/maas/maas/src/lib/gomiracl/rand
 code.miracl.com/maas/maas/src/lib/gomiracl/wrap
 # github.com/google/uuid v1.3.0
 ## explicit
