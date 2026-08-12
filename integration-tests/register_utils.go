@@ -1,7 +1,7 @@
 package main
 
 import (
-	b64 "encoding/base64"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -106,16 +106,65 @@ func newIdentity(httpClient *http.Client, userID, deviceName, activationToken st
 		return nil, err
 	}
 
-	// Call to all SecretURLs to get client secrets and combine them to create a client token.
-	clientToken, err := clientTokenRequests(httpClient, regResponse.SecretURLs, mpinID, publicKey, privateKey, pin)
+	taNodeIDs := make([]string, 0, 2)
+	clientSecretShares := make([][]byte, 0, 2)
+
+	for _, designatedTA := range regResponse.DesignatedTAs {
+		sharePayload := shareRequest{regResponse.MPinID, hex.EncodeToString(publicKey)}
+
+		resp, err := makeRequest(
+			httpClient,
+			designatedTA.URL,
+			http.MethodPost,
+			sharePayload,
+			header{Key: "Authorization", Value: "Bearer " + designatedTA.Token},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		shareResponse := &shareResponse{}
+
+		err = json.Unmarshal(resp, shareResponse)
+		if err != nil {
+			return nil, err
+		}
+
+		share, err := hex.DecodeString(shareResponse.Share)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding client secret share: %v", err)
+		}
+
+		if len(share) == 0 {
+			return nil, fmt.Errorf("invalid client secret share")
+		}
+
+		taNodeIDs = append(taNodeIDs, shareResponse.Node)
+		clientSecretShares = append(clientSecretShares, share)
+	}
+
+	clientToken, err := mpin.GetDVSClientToken(
+		append(mpinID, publicKey...),
+		pin,
+		gomiracl.SHA256,
+		privateKey,
+		curve.BN254CX,
+		clientSecretShares[0],
+		clientSecretShares[1],
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Token: %w", err)
+	}
+
+	nodes, err := encodeTA(taNodeIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	return &identity{
 		MPinID:     mpinID,
-		Token:      clientToken,
-		DTAs:       regResponse.DTAs,
+		Token:      clientToken.Secret(),
+		DTAs:       nodes,
 		PublicKey:  publicKey,
 		PrivateKey: privateKey,
 	}, nil
@@ -123,7 +172,7 @@ func newIdentity(httpClient *http.Client, userID, deviceName, activationToken st
 
 func verificationRequest(httpClient *http.Client, userID, deviceName, projectID string) (string, error) {
 	clientIDAndSecret := options.clientID + ":" + options.clientSecret
-	authHeaderValue := "Basic " + b64.StdEncoding.EncodeToString([]byte(clientIDAndSecret))
+	authHeaderValue := "Basic " + base64.StdEncoding.EncodeToString([]byte(clientIDAndSecret))
 
 	payload := struct {
 		ProjectID     string `json:"projectId"`
@@ -165,11 +214,13 @@ func registrationRequest(httpClient *http.Client, userID, deviceName, publicKey,
 		DeviceName      string `json:"deviceName"`
 		PublicKey       string `json:"publicKey"`
 		UserID          string `json:"userId"`
+		Version         int    `json:"ver"`
 	}{
 		ActivationToken: activationToken,
 		DeviceName:      deviceName,
 		PublicKey:       publicKey,
 		UserID:          userID,
+		Version:         2,
 	}
 
 	resp, err := makeRequest(
@@ -276,4 +327,13 @@ func verificationConfirmation(httpClient *http.Client, userID, code string) (str
 	}
 
 	return res.ActivateToken, nil
+}
+
+func encodeTA(nodeIDs []string) (string, error) {
+	b, err := json.Marshal(&nodeIDs)
+	if err != nil {
+		return "", fmt.Errorf("failed to json encode: %w", err)
+	}
+
+	return base64.RawStdEncoding.EncodeToString(b), nil
 }

@@ -41,14 +41,27 @@ type confirmationResponse struct {
 }
 
 type registrationResponse struct {
-	MPinID           string   `json:"mpinId"`
-	ProjectID        string   `json:"projectId"`
-	DTAs             string   `json:"dtas"`
-	Curve            string   `json:"curve"`
-	SecretURLs       []string `json:"secretUrls"`
-	VerificationType string   `json:"verificationType"`
-	PINLength        int      `json:"pinLength"`
-	MPinIDCreatedAt  int      `json:"createdAt"`
+	MPinID           string         `json:"mpinId"`
+	ProjectID        string         `json:"projectId"`
+	DesignatedTAs    []designatedTA `json:"designatedTAs"`
+	VerificationType string         `json:"verificationType"`
+	PINLength        int            `json:"pinLength"`
+	MPinIDCreatedAt  int            `json:"createdAt"`
+}
+
+type designatedTA struct {
+	URL   string `json:"url"`
+	Token string `json:"token"`
+}
+
+type shareRequest struct {
+	MPinID string `json:"mpinId"`
+	PubKey string `json:"pubKey"`
+}
+
+type shareResponse struct {
+	Node  string `json:"node"`
+	Share string `json:"share"`
 }
 
 type clientSecretResponse struct {
