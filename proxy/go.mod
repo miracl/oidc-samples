@@ -1,10 +1,10 @@
 module github.com/miracl/oidc-samples/proxy
 
-go 1.25
+go 1.26.0
 
-require github.com/elazarl/goproxy v1.7.2
+require github.com/elazarl/goproxy v1.9.2
 
 require (
-	golang.org/x/net v0.46.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 )
