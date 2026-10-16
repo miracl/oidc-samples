@@ -99,7 +99,7 @@ func (a *app) login(w http.ResponseWriter, r *http.Request) {
 	// exchange the code
 	oauth2Token, err := a.oauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		log.Println("Error exchanging token: %w", err)
+		log.Printf("Error exchanging token: %v", err.Error())
 		http.Error(w, "Exchanging code failed.", http.StatusInternalServerError)
 		return
 	}
