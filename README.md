@@ -21,12 +21,12 @@ All samples work with the following environment variables:
   configured for your project in the
   [MIRACL Trust Portal](https://trust.miracl.cloud). It is mandatory and has no
   default value.
-- `REDIRECT_URL` - The redirect URL of the application in the MIRACL Trust
-  platform. The default value is "http://localhost:8000/login".
-- `CLIENT_ID` - The Client ID of the application in the MIRACL Trust platform.
-  It is mandatory and has no default value.
-- `CLIENT_SECRET`- The Client Secret of the application in the MIRACL Trust
-  platform. It is mandatory and has no default value.
+- `REDIRECT_URL` - The redirect URL of your project's OpenID Connect configuration
+  in the MIRACL Trust platform. The default value is "http://localhost:8000/login".
+- `CLIENT_ID` - The Client ID of your project's OpenID Connect configuration in the
+  MIRACL Trust platform. It is mandatory and has no default value.
+- `CLIENT_SECRET`- The Client Secret of your project's OpenID Connect configuration
+  in the MIRACL Trust platform. It is mandatory and has no default value.
 - `PROXY_HOST`- The proxy host address used when running the sample behind a
   proxy. The default value is an empty string. It is used only when the setup
   requires a proxy, allowing us to validate that the OIDC client works behind a
@@ -37,7 +37,7 @@ All samples work with the following environment variables:
 
 To get these values, you'll need to
 [register](https://miracl.com/resources/docs/get-started/register/) and
-[create an application](https://miracl.com/resources/docs/get-started/low-code/)
+[create a project with OpenID Connect Client Credentials](https://miracl.com/resources/docs/get-started/low-code/)
 in our platform.
 
 ## Usage
@@ -83,7 +83,7 @@ docker run \
 
 Note that you don't need to change the port the sample runs on in the
 container - only the Docker mapping. You must also update the redirect URL in
-the command and the application configuration in the
+the command and your project's OpenID Connect client configuration in the
 [MIRACL Trust Portal](https://trust.miracl.cloud).
 
 ## Run through a proxy
@@ -93,7 +93,7 @@ OIDC server misbehaves), we need to modify the traffic between the library and
 the sample showcasing it.
 
 You have the option to use our proxy with the provided samples. See the
-[README](proxy/README.md) in the proxy directory for information on how to build
+[README](./proxy/) in the proxy directory for information on how to build
 and run it.
 
 Provided that you have built Docker images of the proxy and the sample that you

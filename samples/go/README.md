@@ -11,11 +11,14 @@ integration steps.
 
 # Setup
 
-To start an OIDC integration, you must create an OIDC application in the
-[MIRACL Trust Portal](https://trust.miracl.com), as described in
-[Start Low-Code Integration](https://miracl.com/resources/docs/get-started/low-code/).
-The `Redirect URL` must be the same as the one the sample is run with. If you
-use the sample's default value, it must be set to `http://localhost:8000/login`.
+To start an OIDC integration:
+1. Create a project in the [MIRACL Trust Portal](https://trust.miracl.com).
+1. Go to the project’s OpenID Connect section to generate Client Credentials,
+   as described in [Start Low-Code Integration](https://miracl.com/resources/docs/get-started/low-code/).
+
+   You can find the OIDC Issuer in this section too.
+1. In the Redirect URL field, add the sample’s Redirect URL. The default is:
+   `http://localhost:8000/login`.
 
 # Usage
 
