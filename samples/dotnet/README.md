@@ -14,23 +14,26 @@ with the MIRACL Trust platform:
 
 # Setup
 
-To start an OIDC integration, you must create an OIDC application in the
-[MIRACL Trust Portal](https://trust.miracl.com), as described in
-[Start Low-Code Integration](https://miracl.com/resources/docs/get-started/low-code/).
-The `Redirect URL` must be the same as the one the sample is run with. If you
-use the sample's default value, it must be set to
-`http://localhost:59504/login`. You must pass the app's credentials to the
-sample through its `web.config` file as follows:
+To start an OIDC integration:
+1. Create a project in the [MIRACL Trust Portal](https://trust.miracl.com).
+1. Go to the project’s OpenID Connect section to generate Client Credentials,
+   as described in [Start Low-Code Integration](https://miracl.com/resources/docs/get-started/low-code/).
 
-```bash
-  <appSettings>
-    .....
-    <add key="REDIRECT_URL" value="http://localhost:59504/login" />
-    <add key="CLIENT_ID" value="CLIENT_ID" />
-    <add key="CLIENT_SECRET" value="CLIENT_SECRET" />
-    <add key="ISSUER" value="OIDC_ISSUER" />
-  </appSettings>
-```
+   You can find the OIDC Issuer in this section too.
+1. In the Redirect URL field, add the sample’s Redirect URL. The default is:
+   `http://localhost:59504/login`.
+1. You must pass the app's credentials to the sample through its `web.config`
+   file as follows:
+
+   ```bash
+     <appSettings>
+       .....
+       <add key="REDIRECT_URL" value="http://localhost:59504/login" />
+       <add key="CLIENT_ID" value="CLIENT_ID" />
+       <add key="CLIENT_SECRET" value="CLIENT_SECRET" />
+       <add key="ISSUER" value="OIDC_ISSUER" />
+     </appSettings>
+   ```
 
 # Usage
 
